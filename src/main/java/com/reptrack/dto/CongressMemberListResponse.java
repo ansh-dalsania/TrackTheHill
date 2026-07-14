@@ -4,10 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 /**
- * Mirrors outer JSON structure returned by Congress.gov — a list of members and 
- * pagination info.
+ * Mirrors Congress.gov's JSON structure (list of members plus pagination info)
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CongressMemberListResponse {
     public List<CongressMemberDto> members;
+    public Pagination pagination;
+
+    public static class Pagination {
+        public Integer count;
+    }
 }

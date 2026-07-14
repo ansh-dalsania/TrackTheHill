@@ -28,8 +28,8 @@ public class MemberSyncService {
 
     @Autowired
     public MemberSyncService(WebClient congressApiClient,
-                              WebClientConfig webClientConfig,
-                              MemberRepository memberRepository) {
+            WebClientConfig webClientConfig,
+            MemberRepository memberRepository) {
         this.congressApiClient = congressApiClient;
         this.webClientConfig = webClientConfig;
         this.memberRepository = memberRepository;
@@ -111,24 +111,41 @@ public class MemberSyncService {
      * into the member table.
      */
     public void syncMembers(int congressNumber) {
-        CongressMemberListResponse response = congressApiClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/member/congress/{congress}")
-                        .queryParam("currentMember", "true")
-                        .queryParam("limit", "250")
-                        .queryParam("api_key", webClientConfig.getApiKey())
-                        .build(congressNumber))
-                .retrieve()
-                .bodyToMono(CongressMemberListResponse.class)
-                .block();
+        int limit = 250;
+        int offset = 0;
+        int totalCount = Integer.MAX_VALUE; // unknown until first response
 
-        if (response == null || response.members == null) {
-            return;
-        }
+        while (offset < totalCount) {
+            final int currentOffset = offset;
 
-        for (CongressMemberDto dto : response.members) {
-            Member member = mapToMember(dto);
-            memberRepository.save(member);
+            CongressMemberListResponse response = congressApiClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/member/congress/{congress}")
+                            .queryParam("currentMember", "true")
+                            .queryParam("limit", limit)
+                            .queryParam("offset", currentOffset)
+                            .queryParam("api_key", webClientConfig.getApiKey())
+                            .build(congressNumber))
+                    .retrieve()
+                    .bodyToMono(CongressMemberListResponse.class)
+                    .block();
+
+            if (response == null || response.members == null || response.members.isEmpty()) {
+                break;
+            }
+
+            for (CongressMemberDto dto : response.members) {
+                Member member = mapToMember(dto);
+                memberRepository.save(member);
+            }
+
+            if (response.pagination != null && response.pagination.count != null) {
+                totalCount = response.pagination.count;
+            } else {
+                break; // no pagination info, stop after this page
+            }
+
+            offset += limit;
         }
     }
 
