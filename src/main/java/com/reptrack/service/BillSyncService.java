@@ -2,11 +2,14 @@ package com.reptrack.service;
 
 import com.reptrack.Bill;
 import com.reptrack.BillRepository;
+import com.reptrack.MemberRepository;
 import com.reptrack.config.WebClientConfig;
+import com.reptrack.dto.CongressBillDetailDto;
 import com.reptrack.dto.CongressBillDto;
 import com.reptrack.dto.CongressBillListResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import com.reptrack.dto.CongressBillDetailDto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,13 +28,16 @@ public class BillSyncService {
     private final WebClient congressApiClient;
     private final WebClientConfig webClientConfig;
     private final BillRepository billRepository;
+    private final MemberRepository memberRepository;
 
     public BillSyncService(WebClient congressApiClient,
             WebClientConfig webClientConfig,
-            BillRepository billRepository) {
+            BillRepository billRepository,
+            MemberRepository memberRepository) {
         this.congressApiClient = congressApiClient;
         this.webClientConfig = webClientConfig;
         this.billRepository = billRepository;
+        this.memberRepository = memberRepository;
     }
 
     // Keywords in latestAction.text that indicate a bill has progressed
@@ -88,6 +94,55 @@ public class BillSyncService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    /**
+     * Enriches synced bills with detailed data: sponsor, introduced, date,
+     * and policy area. Call after syncBills() since it loops through
+     * bills already in database.
+     */
+    public void enrichBills(int congressNumber) {
+        List<Bill> bills = billRepository.findByCongress(congressNumber);
+        int enrichedCount = 0;
+
+        for (Bill bill : bills) {
+            CongressBillDetailDto response = congressApiClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/bill/{congress}/{type}/{number}")
+                            .queryParam("api_key", webClientConfig.getApiKey())
+                            .build(bill.getCongress(), bill.getBillType(), bill.getBillNumber()))
+                    .retrieve()
+                    .bodyToMono(CongressBillDetailDto.class)
+                    .retry(3)
+                    .block();
+
+            if (response == null || response.bill == null) {
+                continue;
+            }
+
+            if (response.bill.introducedDate != null) {
+                bill.setIntroducedDate(LocalDate.parse(response.bill.introducedDate));
+            }
+            if (response.bill.policyArea != null) {
+                bill.setPolicyArea(response.bill.policyArea.name);
+            }
+            if (response.bill.sponsors != null && !response.bill.sponsors.isEmpty()) {
+                String sponsorId = response.bill.sponsors.get(0).bioguideId;
+                memberRepository.findById(sponsorId).ifPresent(bill::setSponsor);
+            }
+
+            bill.setUpdatedAt(LocalDateTime.now());
+            billRepository.save(bill);
+            enrichedCount++;
+
+            try {
+                Thread.sleep(200); // be a good API citizen, same as bulk sync
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        System.out.println("Bill enrichment complete. Bills enriched: " + enrichedCount);
     }
 
     private boolean hasProgressed(CongressBillDto dto) {

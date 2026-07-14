@@ -28,4 +28,10 @@ public class BillController {
         billSyncService.syncBills(congress);
         return "Bill sync triggered for Congress " + congress;
     }
+
+    @GetMapping("/api/sync/bills/{congress}/enrich")
+    public String triggerEnrichment(@PathVariable int congress) {
+        billSyncService.enrichBills(congress);
+        return "Bill enrichment triggered for Congress " + congress;
+    }
 }
