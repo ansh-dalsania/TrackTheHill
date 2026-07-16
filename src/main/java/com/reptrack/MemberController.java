@@ -3,6 +3,7 @@ package com.reptrack;
 import com.reptrack.service.MemberSyncService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ import com.reptrack.dto.MemberVoteResponse;
 import com.reptrack.service.HouseVoteSyncService; // if not already present
 import java.util.stream.Collectors;
 import com.reptrack.dto.AttendanceResponse;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Exposes Member data over HTTP.
@@ -67,9 +69,10 @@ public class MemberController {
     }
 
     @GetMapping("/api/members/{id}/attendance")
-    public AttendanceResponse getAttendance(@PathVariable String id) {
-        long total = memberVoteRepository.countTotalVotesForMember(id);
-        long missed = memberVoteRepository.countMissedVotesForMember(id);
+    public AttendanceResponse getAttendance(@PathVariable String id,
+            @RequestParam(defaultValue = "119") int congress) {
+        long total = memberVoteRepository.countTotalVotesForMemberInCongress(id, congress);
+        long missed = memberVoteRepository.countMissedVotesForMemberInCongress(id, congress);
         double percentage = total == 0 ? 0.0 : ((total - missed) / (double) total) * 100;
 
         LocalDateTime oneMonthAgo = LocalDateTime.now().minusDays(30);
@@ -78,7 +81,7 @@ public class MemberController {
         double recentPercentage = recentTotal == 0 ? 0.0 : ((recentTotal - recentMissed) / (double) recentTotal) * 100;
 
         return new AttendanceResponse(
-                total, missed, Math.round(percentage * 100.0) / 100.0,
+                congress, total, missed, Math.round(percentage * 100.0) / 100.0,
                 recentTotal, recentMissed, Math.round(recentPercentage * 100.0) / 100.0);
     }
 }
