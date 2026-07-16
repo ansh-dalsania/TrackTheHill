@@ -4,10 +4,15 @@ import com.reptrack.service.MemberSyncService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
 import java.util.List;
+
+import com.reptrack.dto.AttendanceResponse;
 import com.reptrack.dto.MemberVoteResponse;
 import com.reptrack.service.HouseVoteSyncService; // if not already present
 import java.util.stream.Collectors;
+import com.reptrack.dto.AttendanceResponse;
 
 /**
  * Exposes Member data over HTTP.
@@ -59,5 +64,21 @@ public class MemberController {
                         mv.getVote().getBill() != null ? mv.getVote().getBill().getId() : null,
                         mv.getVote().getBill() != null ? mv.getVote().getBill().getTitle() : null))
                 .collect(Collectors.toList());
+    }
+
+    @GetMapping("/api/members/{id}/attendance")
+    public AttendanceResponse getAttendance(@PathVariable String id) {
+        long total = memberVoteRepository.countTotalVotesForMember(id);
+        long missed = memberVoteRepository.countMissedVotesForMember(id);
+        double percentage = total == 0 ? 0.0 : ((total - missed) / (double) total) * 100;
+
+        LocalDateTime oneMonthAgo = LocalDateTime.now().minusDays(30);
+        long recentTotal = memberVoteRepository.countTotalVotesForMemberSince(id, oneMonthAgo);
+        long recentMissed = memberVoteRepository.countMissedVotesForMemberSince(id, oneMonthAgo);
+        double recentPercentage = recentTotal == 0 ? 0.0 : ((recentTotal - recentMissed) / (double) recentTotal) * 100;
+
+        return new AttendanceResponse(
+                total, missed, Math.round(percentage * 100.0) / 100.0,
+                recentTotal, recentMissed, Math.round(recentPercentage * 100.0) / 100.0);
     }
 }
