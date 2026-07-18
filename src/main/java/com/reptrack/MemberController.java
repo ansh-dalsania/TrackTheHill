@@ -11,10 +11,13 @@ import java.util.List;
 
 import com.reptrack.dto.AttendanceResponse;
 import com.reptrack.dto.MemberVoteResponse;
+import com.reptrack.dto.PartisanScoreResponse;
 import com.reptrack.service.HouseVoteSyncService; // if not already present
 import java.util.stream.Collectors;
 import com.reptrack.dto.AttendanceResponse;
 import org.springframework.web.bind.annotation.RequestParam;
+import com.reptrack.dto.PartisanScoreResponse;
+import com.reptrack.service.VoteAnalyticsService;
 
 /**
  * Exposes Member data over HTTP.
@@ -25,12 +28,14 @@ public class MemberController {
     private final MemberRepository memberRepository;
     private final MemberSyncService memberSyncService;
     private final MemberVoteRepository memberVoteRepository;
+    private final VoteAnalyticsService voteAnalyticsService;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
-            MemberVoteRepository memberVoteRepository) {
+            MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
+        this.voteAnalyticsService = voteAnalyticsService;
     }
 
     // Returns all members currently in the database
@@ -83,5 +88,11 @@ public class MemberController {
         return new AttendanceResponse(
                 congress, total, missed, Math.round(percentage * 100.0) / 100.0,
                 recentTotal, recentMissed, Math.round(recentPercentage * 100.0) / 100.0);
+    }
+
+    @GetMapping("/api/members/{id}/partisan-score")
+    public PartisanScoreResponse getPartisanScore(@PathVariable String id,
+            @RequestParam(defaultValue = "119") int congress) {
+        return voteAnalyticsService.calculatePartisanScore(id, congress);
     }
 }
