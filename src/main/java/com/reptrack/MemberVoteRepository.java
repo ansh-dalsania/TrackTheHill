@@ -54,4 +54,10 @@ public interface MemberVoteRepository extends JpaRepository<MemberVote, Long> {
             """)
     List<Object[]> getPartyPositionCountsForAllMemberVotes(@Param("bioguideId") String bioguideId,
             @Param("party") String party);
+
+    @Query("SELECT mv FROM MemberVote mv " +
+            "JOIN FETCH mv.member " +
+            "WHERE mv.vote.id = :voteId " +
+            "ORDER BY mv.member.lastName ASC")
+    List<MemberVote> findAllPositionsForVote(@Param("voteId") String voteId);
 }
