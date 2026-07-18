@@ -18,6 +18,7 @@ import com.reptrack.dto.AttendanceResponse;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.reptrack.dto.PartisanScoreResponse;
 import com.reptrack.service.VoteAnalyticsService;
+import java.util.Map;
 
 /**
  * Exposes Member data over HTTP.
@@ -60,6 +61,8 @@ public class MemberController {
 
     @GetMapping("/api/members/{id}/votes")
     public List<MemberVoteResponse> getMemberVotingHistory(@PathVariable String id) {
+        Map<String, Boolean> alignment = voteAnalyticsService.getPartyAlignmentByVote(id);
+
         return memberVoteRepository.findVotingHistoryForMember(id).stream()
                 .map(mv -> new MemberVoteResponse(
                         mv.getVote().getId(),
@@ -69,7 +72,8 @@ public class MemberController {
                         mv.getVote().getResult(),
                         mv.getPosition(),
                         mv.getVote().getBill() != null ? mv.getVote().getBill().getId() : null,
-                        mv.getVote().getBill() != null ? mv.getVote().getBill().getTitle() : null))
+                        mv.getVote().getBill() != null ? mv.getVote().getBill().getTitle() : null,
+                        alignment.get(mv.getVote().getId())))
                 .collect(Collectors.toList());
     }
 

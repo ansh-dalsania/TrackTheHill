@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Computes derived voting statistics — currently partisan score — from raw MemberVote data.
+ * Computes derived voting statistics — currently partisan score — from raw
+ * MemberVote data.
  */
 @Service
 public class VoteAnalyticsService {
@@ -34,7 +35,8 @@ public class VoteAnalyticsService {
         List<MemberVote> ownVotes = memberVoteRepository.findVotingHistoryForMember(bioguideId);
 
         // Get party position counts for every vote this member participated in
-        List<Object[]> rawCounts = memberVoteRepository.getPartyPositionCountsForMemberVotes(bioguideId, congress, party);
+        List<Object[]> rawCounts = memberVoteRepository.getPartyPositionCountsForMemberVotes(bioguideId, congress,
+                party);
 
         // Group into voteId, position, count
         Map<String, Map<String, Long>> partyCountsByVote = new HashMap<>();
@@ -49,17 +51,21 @@ public class VoteAnalyticsService {
         long votesWithMajority = 0;
 
         for (MemberVote mv : ownVotes) {
-            if (mv.getVote().getCongress() != congress) continue;
+            if (mv.getVote().getCongress() != congress)
+                continue;
 
             String position = mv.getPosition();
-            if (!"Yea".equals(position) && !"Nay".equals(position)) continue; // skip Present/Not Voting
+            if (!"Yea".equals(position) && !"Nay".equals(position))
+                continue; // skip Present/Not Voting
 
             Map<String, Long> counts = partyCountsByVote.get(mv.getVote().getId());
-            if (counts == null) continue;
+            if (counts == null)
+                continue;
 
             long yeaCount = counts.getOrDefault("Yea", 0L);
             long nayCount = counts.getOrDefault("Nay", 0L);
-            if (yeaCount == 0 && nayCount == 0) continue; // no clear party position
+            if (yeaCount == 0 && nayCount == 0)
+                continue; // no clear party position
 
             String partyMajorityPosition = yeaCount >= nayCount ? "Yea" : "Nay";
 
@@ -73,5 +79,47 @@ public class VoteAnalyticsService {
 
         return new PartisanScoreResponse(congress, party, votesConsidered, votesWithMajority,
                 Math.round(percentage * 100.0) / 100.0);
+    }
+
+    /**
+     * Returns a map of voteId, whether the member's position matched their
+     * party's majority position, for every vote the member participated in.
+     */
+    public Map<String, Boolean> getPartyAlignmentByVote(String bioguideId) {
+        Member member = memberRepository.findById(bioguideId)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found: " + bioguideId));
+        String party = member.getParty();
+
+        List<MemberVote> ownVotes = memberVoteRepository.findVotingHistoryForMember(bioguideId);
+        List<Object[]> rawCounts = memberVoteRepository.getPartyPositionCountsForAllMemberVotes(bioguideId, party);
+
+        Map<String, Map<String, Long>> partyCountsByVote = new HashMap<>();
+        for (Object[] row : rawCounts) {
+            String voteId = (String) row[0];
+            String position = (String) row[1];
+            Long count = (Long) row[2];
+            partyCountsByVote.computeIfAbsent(voteId, k -> new HashMap<>()).put(position, count);
+        }
+
+        Map<String, Boolean> alignment = new HashMap<>();
+        for (MemberVote mv : ownVotes) {
+            String position = mv.getPosition();
+            if (!"Yea".equals(position) && !"Nay".equals(position))
+                continue;
+
+            Map<String, Long> counts = partyCountsByVote.get(mv.getVote().getId());
+            if (counts == null)
+                continue;
+
+            long yeaCount = counts.getOrDefault("Yea", 0L);
+            long nayCount = counts.getOrDefault("Nay", 0L);
+            if (yeaCount == 0 && nayCount == 0)
+                continue;
+
+            String partyMajorityPosition = yeaCount >= nayCount ? "Yea" : "Nay";
+            alignment.put(mv.getVote().getId(), position.equals(partyMajorityPosition));
+        }
+
+        return alignment;
     }
 }

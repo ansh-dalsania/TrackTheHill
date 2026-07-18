@@ -19,4 +19,5 @@ public class MemberVoteResponse {
     private String position; //Yea/Nay/Present/Not Voting
     private String billId; //nullable (null for procedural votes)
     private String billTitle; //nullable
+    private Boolean alignedWithParty; // null if no clear position/majority to compare
 }
