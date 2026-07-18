@@ -53,7 +53,8 @@ public class Member {
     @Column(name = "office_email")
     private String officeEmail;
 
-    // False if the member has left office (lost re-election, retired, resigned, etc.)
+    // False if the member has left office (lost re-election, retired, resigned,
+    // etc.)
     @Column(name = "in_office", nullable = false)
     private Boolean inOffice;
 
@@ -66,4 +67,10 @@ public class Member {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "nominate_dim1")
+    private Double nominateDim1;
+
+    @Column(name = "nominate_dim2")
+    private Double nominateDim2;
 }

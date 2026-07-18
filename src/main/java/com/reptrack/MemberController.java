@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.reptrack.dto.PartisanScoreResponse;
 import com.reptrack.service.VoteAnalyticsService;
 import java.util.Map;
+import com.reptrack.service.NominateScoreSyncService;
 
 /**
  * Exposes Member data over HTTP.
@@ -30,13 +31,16 @@ public class MemberController {
     private final MemberSyncService memberSyncService;
     private final MemberVoteRepository memberVoteRepository;
     private final VoteAnalyticsService voteAnalyticsService;
+    private final NominateScoreSyncService nominateScoreSyncService;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
-            MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService) {
+            MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService, 
+            NominateScoreSyncService nominateScoreSyncService) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
         this.voteAnalyticsService = voteAnalyticsService;
+        this.nominateScoreSyncService = nominateScoreSyncService;
     }
 
     // Returns all members currently in the database
@@ -98,5 +102,11 @@ public class MemberController {
     public PartisanScoreResponse getPartisanScore(@PathVariable String id,
             @RequestParam(defaultValue = "119") int congress) {
         return voteAnalyticsService.calculatePartisanScore(id, congress);
+    }
+
+    @GetMapping("/api/sync/members/{congress}/nominate")
+    public String triggerNominateSync(@PathVariable int congress) throws Exception {
+        nominateScoreSyncService.syncNominateScores(congress);
+        return "Nominate score sync triggered for Congress " + congress;
     }
 }
