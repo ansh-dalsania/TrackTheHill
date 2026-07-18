@@ -32,15 +32,17 @@ public class MemberController {
     private final MemberVoteRepository memberVoteRepository;
     private final VoteAnalyticsService voteAnalyticsService;
     private final NominateScoreSyncService nominateScoreSyncService;
+    private final BillRepository billRepository;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
-            MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService, 
-            NominateScoreSyncService nominateScoreSyncService) {
+            MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService,
+            NominateScoreSyncService nominateScoreSyncService, BillRepository billRepository) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
         this.voteAnalyticsService = voteAnalyticsService;
         this.nominateScoreSyncService = nominateScoreSyncService;
+        this.billRepository = billRepository;
     }
 
     // Returns all members currently in the database
@@ -108,5 +110,10 @@ public class MemberController {
     public String triggerNominateSync(@PathVariable int congress) throws Exception {
         nominateScoreSyncService.syncNominateScores(congress);
         return "Nominate score sync triggered for Congress " + congress;
+    }
+
+    @GetMapping("/api/members/{id}/bills-sponsored")
+    public List<Bill> getBillsSponsored(@PathVariable String id) {
+        return billRepository.findBySponsorBioguideId(id);
     }
 }
