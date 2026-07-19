@@ -33,16 +33,19 @@ public class MemberController {
     private final VoteAnalyticsService voteAnalyticsService;
     private final NominateScoreSyncService nominateScoreSyncService;
     private final BillRepository billRepository;
+    private final BillCosponsorRepository billCosponsorRepository;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
             MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService,
-            NominateScoreSyncService nominateScoreSyncService, BillRepository billRepository) {
+            NominateScoreSyncService nominateScoreSyncService, BillRepository billRepository,
+            BillCosponsorRepository billCosponsorRepository) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
         this.voteAnalyticsService = voteAnalyticsService;
         this.nominateScoreSyncService = nominateScoreSyncService;
         this.billRepository = billRepository;
+        this.billCosponsorRepository = billCosponsorRepository;
     }
 
     // Returns all members currently in the database
@@ -115,5 +118,10 @@ public class MemberController {
     @GetMapping("/api/members/{id}/bills-sponsored")
     public List<Bill> getBillsSponsored(@PathVariable String id) {
         return billRepository.findBySponsorBioguideId(id);
+    }
+
+    @GetMapping("/api/members/{id}/bills-cosponsored")
+    public List<BillCosponsor> getBillsCosponsored(@PathVariable String id) {
+        return billCosponsorRepository.findByMemberBioguideId(id);
     }
 }

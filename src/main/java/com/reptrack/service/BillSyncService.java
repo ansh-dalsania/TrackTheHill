@@ -1,15 +1,23 @@
 package com.reptrack.service;
 
 import com.reptrack.Bill;
+import com.reptrack.BillCosponsor;
 import com.reptrack.BillRepository;
 import com.reptrack.MemberRepository;
 import com.reptrack.config.WebClientConfig;
 import com.reptrack.dto.CongressBillDetailDto;
 import com.reptrack.dto.CongressBillDto;
 import com.reptrack.dto.CongressBillListResponse;
+import com.reptrack.dto.CongressCosponsorDto;
+import com.reptrack.dto.CongressCosponsorListResponse;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import com.reptrack.dto.CongressBillDetailDto;
+import com.reptrack.BillCosponsor;
+import com.reptrack.BillCosponsorRepository;
+import com.reptrack.dto.CongressCosponsorDto;
+import com.reptrack.dto.CongressCosponsorListResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,15 +37,16 @@ public class BillSyncService {
     private final WebClientConfig webClientConfig;
     private final BillRepository billRepository;
     private final MemberRepository memberRepository;
+    private final BillCosponsorRepository billCosponsorRepository;
 
-    public BillSyncService(WebClient congressApiClient,
-            WebClientConfig webClientConfig,
-            BillRepository billRepository,
-            MemberRepository memberRepository) {
+    public BillSyncService(WebClient congressApiClient, WebClientConfig webClientConfig,
+            BillRepository billRepository, MemberRepository memberRepository,
+            BillCosponsorRepository billCosponsorRepository) {
         this.congressApiClient = congressApiClient;
         this.webClientConfig = webClientConfig;
         this.billRepository = billRepository;
         this.memberRepository = memberRepository;
+        this.billCosponsorRepository = billCosponsorRepository;
     }
 
     // Keywords in latestAction.text that indicate a bill has progressed
@@ -174,5 +183,63 @@ public class BillSyncService {
         bill.setUpdatedAt(LocalDateTime.now());
 
         return bill;
+    }
+
+    /**
+     * Fetches and stores cosponsor data for all bills in a given congress.
+     * Run this after syncBills() and enrichBills(), since it loops through
+     * bills already in the database.
+     */
+    public void syncCosponsors(int congressNumber) {
+        List<Bill> bills = billRepository.findByCongress(congressNumber);
+        int totalCosponsors = 0;
+
+        for (Bill bill : bills) {
+            CongressCosponsorListResponse response = congressApiClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/bill/{congress}/{type}/{number}/cosponsors")
+                            .queryParam("api_key", webClientConfig.getApiKey())
+                            .build(bill.getCongress(), bill.getBillType(), bill.getBillNumber()))
+                    .retrieve()
+                    .bodyToMono(CongressCosponsorListResponse.class)
+                    .retry(3)
+                    .block();
+
+            if (response == null || response.cosponsors == null || response.cosponsors.isEmpty()) {
+                sleep();
+                continue;
+            }
+
+            for (CongressCosponsorDto dto : response.cosponsors) {
+                var memberOpt = memberRepository.findById(dto.bioguideId);
+                if (memberOpt.isEmpty())
+                    continue; // skip cosponsors not in our roster
+
+                BillCosponsor cosponsor = billCosponsorRepository
+                        .findByBillIdAndMemberBioguideId(bill.getId(), dto.bioguideId)
+                        .orElse(new BillCosponsor());
+                cosponsor.setBill(bill);
+                cosponsor.setMember(memberOpt.get());
+                cosponsor.setSponsorshipDate(dto.sponsorshipDate != null ? LocalDate.parse(dto.sponsorshipDate) : null);
+                cosponsor.setIsOriginalCosponsor(dto.isOriginalCosponsor);
+                if (cosponsor.getCreatedAt() == null) {
+                    cosponsor.setCreatedAt(LocalDateTime.now());
+                }
+                billCosponsorRepository.save(cosponsor);
+                totalCosponsors++;
+            }
+
+            sleep();
+        }
+
+        System.out.println("Cosponsor sync complete. Total cosponsor records: " + totalCosponsors);
+    }
+
+    private void sleep() {
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
