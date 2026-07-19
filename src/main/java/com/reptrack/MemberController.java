@@ -12,6 +12,7 @@ import java.util.List;
 import com.reptrack.dto.AttendanceResponse;
 import com.reptrack.dto.MemberVoteResponse;
 import com.reptrack.dto.PartisanScoreResponse;
+import com.reptrack.service.CampaignFinanceSyncService;
 import com.reptrack.service.FecCrosswalkSyncService;
 import com.reptrack.service.HouseVoteSyncService; // if not already present
 import java.util.stream.Collectors;
@@ -36,11 +37,13 @@ public class MemberController {
     private final BillRepository billRepository;
     private final BillCosponsorRepository billCosponsorRepository;
     private final FecCrosswalkSyncService fecCrosswalkSyncService;
+    private final CampaignFinanceSyncService campaignFinanceSyncService;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
             MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService,
             NominateScoreSyncService nominateScoreSyncService, BillRepository billRepository,
-            BillCosponsorRepository billCosponsorRepository, FecCrosswalkSyncService fecCrosswalkSyncService) {
+            BillCosponsorRepository billCosponsorRepository, FecCrosswalkSyncService fecCrosswalkSyncService,
+            CampaignFinanceSyncService campaignFinanceSyncService) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
@@ -49,6 +52,7 @@ public class MemberController {
         this.billRepository = billRepository;
         this.billCosponsorRepository = billCosponsorRepository;
         this.fecCrosswalkSyncService = fecCrosswalkSyncService;
+        this.campaignFinanceSyncService = campaignFinanceSyncService;
     }
 
     // Returns all members currently in the database
@@ -132,5 +136,11 @@ public class MemberController {
     public String triggerFecCrosswalkSync() throws Exception {
         fecCrosswalkSyncService.syncCrosswalk();
         return "FEC crosswalk sync triggered";
+    }
+
+    @GetMapping("/api/sync/finance/{cycle}")
+    public String triggerFinanceSync(@PathVariable int cycle) {
+        campaignFinanceSyncService.syncFinanceSummaries(cycle);
+        return "Campaign finance sync triggered for cycle " + cycle;
     }
 }
