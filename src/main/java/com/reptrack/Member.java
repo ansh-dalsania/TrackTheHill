@@ -73,4 +73,7 @@ public class Member {
 
     @Column(name = "nominate_dim2")
     private Double nominateDim2;
+
+    @Column(name = "fec_candidate_id")
+    private String fecCandidateId;
 }

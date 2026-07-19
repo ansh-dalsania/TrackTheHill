@@ -12,6 +12,7 @@ import java.util.List;
 import com.reptrack.dto.AttendanceResponse;
 import com.reptrack.dto.MemberVoteResponse;
 import com.reptrack.dto.PartisanScoreResponse;
+import com.reptrack.service.FecCrosswalkSyncService;
 import com.reptrack.service.HouseVoteSyncService; // if not already present
 import java.util.stream.Collectors;
 import com.reptrack.dto.AttendanceResponse;
@@ -34,11 +35,12 @@ public class MemberController {
     private final NominateScoreSyncService nominateScoreSyncService;
     private final BillRepository billRepository;
     private final BillCosponsorRepository billCosponsorRepository;
+    private final FecCrosswalkSyncService fecCrosswalkSyncService;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
             MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService,
             NominateScoreSyncService nominateScoreSyncService, BillRepository billRepository,
-            BillCosponsorRepository billCosponsorRepository) {
+            BillCosponsorRepository billCosponsorRepository, FecCrosswalkSyncService fecCrosswalkSyncService) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
@@ -46,6 +48,7 @@ public class MemberController {
         this.nominateScoreSyncService = nominateScoreSyncService;
         this.billRepository = billRepository;
         this.billCosponsorRepository = billCosponsorRepository;
+        this.fecCrosswalkSyncService = fecCrosswalkSyncService;
     }
 
     // Returns all members currently in the database
@@ -123,5 +126,11 @@ public class MemberController {
     @GetMapping("/api/members/{id}/bills-cosponsored")
     public List<BillCosponsor> getBillsCosponsored(@PathVariable String id) {
         return billCosponsorRepository.findByMemberBioguideId(id);
+    }
+
+    @GetMapping("/api/sync/members/fec-crosswalk")
+    public String triggerFecCrosswalkSync() throws Exception {
+        fecCrosswalkSyncService.syncCrosswalk();
+        return "FEC crosswalk sync triggered";
     }
 }
