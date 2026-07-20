@@ -76,4 +76,7 @@ public class Member {
 
     @Column(name = "fec_candidate_id")
     private String fecCandidateId;
+
+    @Column(name = "fec_committee_id")
+    private String fecCommitteeId;
 }

@@ -22,6 +22,7 @@ import com.reptrack.dto.PartisanScoreResponse;
 import com.reptrack.service.VoteAnalyticsService;
 import java.util.Map;
 import com.reptrack.service.NominateScoreSyncService;
+import com.reptrack.service.TopDonorSyncService;
 
 /**
  * Exposes Member data over HTTP.
@@ -38,12 +39,15 @@ public class MemberController {
     private final BillCosponsorRepository billCosponsorRepository;
     private final FecCrosswalkSyncService fecCrosswalkSyncService;
     private final CampaignFinanceSyncService campaignFinanceSyncService;
+    private final TopDonorSyncService topDonorSyncService;
+    private final TopDonorRepository topDonorRepository;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
             MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService,
             NominateScoreSyncService nominateScoreSyncService, BillRepository billRepository,
             BillCosponsorRepository billCosponsorRepository, FecCrosswalkSyncService fecCrosswalkSyncService,
-            CampaignFinanceSyncService campaignFinanceSyncService) {
+            CampaignFinanceSyncService campaignFinanceSyncService, TopDonorSyncService topDonorSyncService,
+            TopDonorRepository topDonorRepository) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
@@ -53,6 +57,8 @@ public class MemberController {
         this.billCosponsorRepository = billCosponsorRepository;
         this.fecCrosswalkSyncService = fecCrosswalkSyncService;
         this.campaignFinanceSyncService = campaignFinanceSyncService;
+        this.topDonorSyncService = topDonorSyncService;
+        this.topDonorRepository = topDonorRepository;
     }
 
     // Returns all members currently in the database
@@ -142,5 +148,16 @@ public class MemberController {
     public String triggerFinanceSync(@PathVariable int cycle) {
         campaignFinanceSyncService.syncFinanceSummaries(cycle);
         return "Campaign finance sync triggered for cycle " + cycle;
+    }
+
+    @GetMapping("/api/sync/top-donors/{cycle}")
+    public String triggerTopDonorSync(@PathVariable int cycle) {
+        topDonorSyncService.syncTopDonors(cycle);
+        return "Top donor sync triggered for cycle " + cycle;
+    }
+
+    @GetMapping("/api/members/{id}/top-donors")
+    public List<TopDonor> getTopDonors(@PathVariable String id, @RequestParam(defaultValue = "2026") int cycle) {
+        return topDonorRepository.findByMemberBioguideIdAndCycleOrderByContributionAmountDesc(id, cycle);
     }
 }
