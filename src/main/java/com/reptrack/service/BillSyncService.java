@@ -10,6 +10,8 @@ import com.reptrack.dto.CongressBillDto;
 import com.reptrack.dto.CongressBillListResponse;
 import com.reptrack.dto.CongressCosponsorDto;
 import com.reptrack.dto.CongressCosponsorListResponse;
+import com.reptrack.dto.CongressSummaryDto;
+import com.reptrack.dto.CongressSummaryListResponse;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -18,6 +20,9 @@ import com.reptrack.BillCosponsor;
 import com.reptrack.BillCosponsorRepository;
 import com.reptrack.dto.CongressCosponsorDto;
 import com.reptrack.dto.CongressCosponsorListResponse;
+import com.reptrack.dto.CongressSummaryDto;
+import com.reptrack.dto.CongressSummaryListResponse;
+import java.util.Comparator;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -241,5 +246,50 @@ public class BillSyncService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    /**
+     * Fetches official Congressional Research Service summaries for all
+     * bills in a given congress, storing the most recent version (by actionDate)
+     * in bill.summary.
+     */
+    public void syncSummaries(int congressNumber) {
+        List<Bill> bills = billRepository.findByCongress(congressNumber);
+        int updatedCount = 0;
+
+        for (Bill bill : bills) {
+            try {
+                CongressSummaryListResponse response = congressApiClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/bill/{congress}/{type}/{number}/summaries")
+                                .queryParam("api_key", webClientConfig.getApiKey())
+                                .build(bill.getCongress(), bill.getBillType(), bill.getBillNumber()))
+                        .retrieve()
+                        .bodyToMono(CongressSummaryListResponse.class)
+                        .retry(3)
+                        .block();
+
+                if (response == null || response.summaries == null || response.summaries.isEmpty()) {
+                    sleep();
+                    continue;
+                }
+
+                CongressSummaryDto mostRecent = response.summaries.stream()
+                        .filter(s -> s.actionDate != null)
+                        .max(Comparator.comparing(s -> s.actionDate))
+                        .orElse(response.summaries.get(response.summaries.size() - 1));
+
+                bill.setSummary(mostRecent.text);
+                bill.setUpdatedAt(LocalDateTime.now());
+                billRepository.save(bill);
+                updatedCount++;
+            } catch (Exception e) {
+                System.out.println("Skipping bill " + bill.getId() + " due to error: " + e.getMessage());
+            }
+
+            sleep();
+        }
+
+        System.out.println("Summary sync complete. Bills updated: " + updatedCount);
     }
 }

@@ -40,4 +40,10 @@ public class BillController {
         billSyncService.syncCosponsors(congress);
         return "Cosponsor sync triggered for Congress " + congress;
     }
+
+    @GetMapping("/api/sync/bills/{congress}/summaries")
+    public String triggerSummarySync(@PathVariable int congress) {
+        billSyncService.syncSummaries(congress);
+        return "Summary sync triggered for Congress " + congress;
+    }
 }
