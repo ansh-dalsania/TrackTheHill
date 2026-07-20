@@ -160,4 +160,22 @@ public class MemberController {
     public List<TopDonor> getTopDonors(@PathVariable String id, @RequestParam(defaultValue = "2026") int cycle) {
         return topDonorRepository.findByMemberBioguideIdAndCycleOrderByContributionAmountDesc(id, cycle);
     }
+
+    @GetMapping("/api/members/{id}/votes-by-issue")
+    public List<MemberVoteResponse> getVotesByPolicyArea(@PathVariable String id, @RequestParam String policyArea) {
+        Map<String, Boolean> alignment = voteAnalyticsService.getPartyAlignmentByVote(id);
+
+        return memberVoteRepository.findVotingHistoryForMemberByPolicyArea(id, policyArea).stream()
+                .map(mv -> new MemberVoteResponse(
+                        mv.getVote().getId(),
+                        mv.getVote().getChamber(),
+                        mv.getVote().getVoteDate(),
+                        mv.getVote().getVoteQuestion(),
+                        mv.getVote().getResult(),
+                        mv.getPosition(),
+                        mv.getVote().getBill().getId(),
+                        mv.getVote().getBill().getTitle(),
+                        alignment.get(mv.getVote().getId())))
+                .collect(Collectors.toList());
+    }
 }

@@ -46,4 +46,9 @@ public class BillController {
         billSyncService.syncSummaries(congress);
         return "Summary sync triggered for Congress " + congress;
     }
+
+    @GetMapping("/api/policy-areas")
+    public List<String> getPolicyAreas() {
+        return billRepository.findDistinctPolicyAreas();
+    }
 }

@@ -60,4 +60,12 @@ public interface MemberVoteRepository extends JpaRepository<MemberVote, Long> {
             "WHERE mv.vote.id = :voteId " +
             "ORDER BY mv.member.lastName ASC")
     List<MemberVote> findAllPositionsForVote(@Param("voteId") String voteId);
+
+    @Query("SELECT mv FROM MemberVote mv " +
+            "JOIN FETCH mv.vote v " +
+            "JOIN FETCH v.bill b " +
+            "WHERE mv.member.bioguideId = :bioguideId AND b.policyArea = :policyArea " +
+            "ORDER BY v.voteDate DESC")
+    List<MemberVote> findVotingHistoryForMemberByPolicyArea(@Param("bioguideId") String bioguideId,
+            @Param("policyArea") String policyArea);
 }
