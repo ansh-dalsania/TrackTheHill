@@ -13,6 +13,7 @@ import com.reptrack.dto.AttendanceResponse;
 import com.reptrack.dto.MemberVoteResponse;
 import com.reptrack.dto.PartisanScoreResponse;
 import com.reptrack.service.CampaignFinanceSyncService;
+import com.reptrack.service.CommitteeSyncService;
 import com.reptrack.service.FecCrosswalkSyncService;
 import com.reptrack.service.HouseVoteSyncService; // if not already present
 import java.util.stream.Collectors;
@@ -41,13 +42,16 @@ public class MemberController {
     private final CampaignFinanceSyncService campaignFinanceSyncService;
     private final TopDonorSyncService topDonorSyncService;
     private final TopDonorRepository topDonorRepository;
+    private final CommitteeSyncService committeeSyncService;
+    private final CommitteeMembershipRepository committeeMembershipRepository;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
             MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService,
             NominateScoreSyncService nominateScoreSyncService, BillRepository billRepository,
             BillCosponsorRepository billCosponsorRepository, FecCrosswalkSyncService fecCrosswalkSyncService,
             CampaignFinanceSyncService campaignFinanceSyncService, TopDonorSyncService topDonorSyncService,
-            TopDonorRepository topDonorRepository) {
+            TopDonorRepository topDonorRepository, CommitteeSyncService committeeSyncService,
+            CommitteeMembershipRepository committeeMembershipRepository) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
@@ -59,6 +63,8 @@ public class MemberController {
         this.campaignFinanceSyncService = campaignFinanceSyncService;
         this.topDonorSyncService = topDonorSyncService;
         this.topDonorRepository = topDonorRepository;
+        this.committeeSyncService = committeeSyncService;
+        this.committeeMembershipRepository = committeeMembershipRepository;
     }
 
     // Returns all members currently in the database
@@ -177,5 +183,16 @@ public class MemberController {
                         mv.getVote().getBill().getTitle(),
                         alignment.get(mv.getVote().getId())))
                 .collect(Collectors.toList());
+    }
+
+    @GetMapping("/api/sync/committees")
+    public String triggerCommitteeSync() throws Exception {
+        committeeSyncService.syncCommittees();
+        return "Committee sync triggered";
+    }
+
+    @GetMapping("/api/members/{id}/committees")
+    public List<CommitteeMembership> getMemberCommittees(@PathVariable String id) {
+        return committeeMembershipRepository.findByMemberBioguideId(id);
     }
 }
