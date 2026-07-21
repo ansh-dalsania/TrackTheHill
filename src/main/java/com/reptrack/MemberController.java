@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.reptrack.dto.AttendanceResponse;
@@ -227,5 +228,86 @@ public class MemberController {
     @GetMapping("/api/members/{id}/committees")
     public List<CommitteeMembership> getMemberCommittees(@PathVariable String id) {
         return committeeMembershipRepository.findByMemberBioguideId(id);
+    }
+
+    @GetMapping("/api/states")
+    public List<Map<String, String>> getStates() {
+        Map<String, String> stateNames = new LinkedHashMap<>();
+        stateNames.put("AL", "Alabama");
+        stateNames.put("AK", "Alaska");
+        stateNames.put("AZ", "Arizona");
+        stateNames.put("AR", "Arkansas");
+        stateNames.put("CA", "California");
+        stateNames.put("CO", "Colorado");
+        stateNames.put("CT", "Connecticut");
+        stateNames.put("DE", "Delaware");
+        stateNames.put("FL", "Florida");
+        stateNames.put("GA", "Georgia");
+        stateNames.put("HI", "Hawaii");
+        stateNames.put("ID", "Idaho");
+        stateNames.put("IL", "Illinois");
+        stateNames.put("IN", "Indiana");
+        stateNames.put("IA", "Iowa");
+        stateNames.put("KS", "Kansas");
+        stateNames.put("KY", "Kentucky");
+        stateNames.put("LA", "Louisiana");
+        stateNames.put("ME", "Maine");
+        stateNames.put("MD", "Maryland");
+        stateNames.put("MA", "Massachusetts");
+        stateNames.put("MI", "Michigan");
+        stateNames.put("MN", "Minnesota");
+        stateNames.put("MS", "Mississippi");
+        stateNames.put("MO", "Missouri");
+        stateNames.put("MT", "Montana");
+        stateNames.put("NE", "Nebraska");
+        stateNames.put("NV", "Nevada");
+        stateNames.put("NH", "New Hampshire");
+        stateNames.put("NJ", "New Jersey");
+        stateNames.put("NM", "New Mexico");
+        stateNames.put("NY", "New York");
+        stateNames.put("NC", "North Carolina");
+        stateNames.put("ND", "North Dakota");
+        stateNames.put("OH", "Ohio");
+        stateNames.put("OK", "Oklahoma");
+        stateNames.put("OR", "Oregon");
+        stateNames.put("PA", "Pennsylvania");
+        stateNames.put("RI", "Rhode Island");
+        stateNames.put("SC", "South Carolina");
+        stateNames.put("SD", "South Dakota");
+        stateNames.put("TN", "Tennessee");
+        stateNames.put("TX", "Texas");
+        stateNames.put("UT", "Utah");
+        stateNames.put("VT", "Vermont");
+        stateNames.put("VA", "Virginia");
+        stateNames.put("WA", "Washington");
+        stateNames.put("WV", "West Virginia");
+        stateNames.put("WI", "Wisconsin");
+        stateNames.put("WY", "Wyoming");
+        stateNames.put("DC", "District of Columbia");
+        stateNames.put("PR", "Puerto Rico");
+        stateNames.put("GU", "Guam");
+        stateNames.put("AS", "American Samoa");
+        stateNames.put("VI", "Virgin Islands");
+        stateNames.put("MP", "Northern Mariana Islands");
+
+        return memberRepository.findDistinctStates().stream()
+                .map(code -> {
+                    Map<String, String> entry = new LinkedHashMap<>();
+                    entry.put("code", code);
+                    entry.put("name", stateNames.getOrDefault(code, code));
+                    return entry;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/api/members/by-state/{state}")
+    public List<Member> getMembersByState(@PathVariable String state) {
+        return memberRepository.findByStateOrderByChamberAscDistrictAsc(state);
+    }
+
+    @GetMapping("/api/members/search")
+    public List<Member> searchMembers(@RequestParam String chamber, @RequestParam String query) {
+        return memberRepository.findByChamberAndFirstNameContainingIgnoreCaseOrChamberAndLastNameContainingIgnoreCase(
+                chamber, query, chamber, query);
     }
 }
