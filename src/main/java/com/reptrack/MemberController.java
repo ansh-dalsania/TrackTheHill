@@ -1,6 +1,8 @@
 package com.reptrack;
 
 import com.reptrack.service.MemberSyncService;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,6 +26,7 @@ import com.reptrack.service.VoteAnalyticsService;
 import java.util.Map;
 import com.reptrack.service.NominateScoreSyncService;
 import com.reptrack.service.TopDonorSyncService;
+import org.springframework.data.domain.Page;
 
 /**
  * Exposes Member data over HTTP.
@@ -69,8 +72,9 @@ public class MemberController {
 
     // Returns all members currently in the database
     @GetMapping("/api/members")
-    public List<Member> getAllMembers() {
-        return memberRepository.findAll();
+    public Page<Member> getAllMembers(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return memberRepository.findAll(PageRequest.of(page, size));
     }
 
     // Returns a single member by their bioguide ID

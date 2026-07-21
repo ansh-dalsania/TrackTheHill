@@ -1,10 +1,15 @@
 package com.reptrack;
 
 import com.reptrack.service.BillSyncService;
+
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
+import org.springframework.data.domain.Page;
+
 
 @RestController
 public class BillController {
@@ -18,8 +23,9 @@ public class BillController {
     }
 
     @GetMapping("/api/bills")
-    public List<Bill> getAllBills() {
-        return billRepository.findAll();
+    public Page<Bill> getAllBills(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return billRepository.findAll(PageRequest.of(page, size));
     }
 
     // TEMPORARY: manually triggers a bill sync from Congress.gov.
