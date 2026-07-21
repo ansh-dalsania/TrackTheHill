@@ -12,16 +12,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.reptrack.dto.AttendanceResponse;
+import com.reptrack.dto.BillCosponsorResponse;
+import com.reptrack.dto.BillSummaryResponse;
 import com.reptrack.dto.MemberVoteResponse;
 import com.reptrack.dto.PartisanScoreResponse;
 import com.reptrack.service.CampaignFinanceSyncService;
 import com.reptrack.service.CommitteeSyncService;
 import com.reptrack.service.FecCrosswalkSyncService;
-import com.reptrack.service.HouseVoteSyncService; // if not already present
+import com.reptrack.service.HouseVoteSyncService;
 import java.util.stream.Collectors;
-import com.reptrack.dto.AttendanceResponse;
-import org.springframework.web.bind.annotation.RequestParam;
-import com.reptrack.dto.PartisanScoreResponse;
 import com.reptrack.service.VoteAnalyticsService;
 import java.util.Map;
 import com.reptrack.service.NominateScoreSyncService;
@@ -139,13 +138,43 @@ public class MemberController {
     }
 
     @GetMapping("/api/members/{id}/bills-sponsored")
-    public List<Bill> getBillsSponsored(@PathVariable String id) {
-        return billRepository.findBySponsorBioguideId(id);
+    public List<BillSummaryResponse> getBillsSponsored(@PathVariable String id) {
+        return billRepository.findBySponsorBioguideId(id).stream()
+                .map(bill -> new BillSummaryResponse(
+                        bill.getId(),
+                        bill.getTitle(),
+                        bill.getBillType(),
+                        bill.getBillNumber(),
+                        bill.getOriginChamber(),
+                        bill.getLatestActionText(),
+                        bill.getLatestActionDate(),
+                        bill.getPolicyArea(),
+                        bill.getSponsor() != null ? bill.getSponsor().getBioguideId() : null,
+                        bill.getSponsor() != null
+                                ? bill.getSponsor().getFirstName() + " " + bill.getSponsor().getLastName()
+                                : null))
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/api/members/{id}/bills-cosponsored")
-    public List<BillCosponsor> getBillsCosponsored(@PathVariable String id) {
-        return billCosponsorRepository.findByMemberBioguideId(id);
+    public List<BillCosponsorResponse> getBillsCosponsored(@PathVariable String id) {
+        return billCosponsorRepository.findByMemberBioguideId(id).stream()
+                .map(bc -> new BillCosponsorResponse(
+                        new BillSummaryResponse(
+                                bc.getBill().getId(),
+                                bc.getBill().getTitle(),
+                                bc.getBill().getBillType(),
+                                bc.getBill().getBillNumber(),
+                                bc.getBill().getOriginChamber(),
+                                bc.getBill().getLatestActionText(),
+                                bc.getBill().getLatestActionDate(),
+                                bc.getBill().getPolicyArea(),
+                                bc.getBill().getSponsor() != null ? bc.getBill().getSponsor().getBioguideId() : null,
+                                bc.getBill().getSponsor() != null ? bc.getBill().getSponsor().getFirstName() + " "
+                                        + bc.getBill().getSponsor().getLastName() : null),
+                        bc.getSponsorshipDate(),
+                        bc.getIsOriginalCosponsor()))
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/api/sync/members/fec-crosswalk")

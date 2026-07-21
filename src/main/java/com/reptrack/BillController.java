@@ -1,5 +1,6 @@
 package com.reptrack;
 
+import com.reptrack.dto.BillSummaryResponse;
 import com.reptrack.service.BillSyncService;
 
 import org.springframework.data.domain.PageRequest;
@@ -9,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import org.springframework.data.domain.Page;
-
 
 @RestController
 public class BillController {
@@ -23,9 +23,22 @@ public class BillController {
     }
 
     @GetMapping("/api/bills")
-    public Page<Bill> getAllBills(@RequestParam(defaultValue = "0") int page,
+    public Page<BillSummaryResponse> getAllBills(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        return billRepository.findAll(PageRequest.of(page, size));
+        return billRepository.findAll(PageRequest.of(page, size))
+                .map(bill -> new BillSummaryResponse(
+                        bill.getId(),
+                        bill.getTitle(),
+                        bill.getBillType(),
+                        bill.getBillNumber(),
+                        bill.getOriginChamber(),
+                        bill.getLatestActionText(),
+                        bill.getLatestActionDate(),
+                        bill.getPolicyArea(),
+                        bill.getSponsor() != null ? bill.getSponsor().getBioguideId() : null,
+                        bill.getSponsor() != null
+                                ? bill.getSponsor().getFirstName() + " " + bill.getSponsor().getLastName()
+                                : null));
     }
 
     // TEMPORARY: manually triggers a bill sync from Congress.gov.

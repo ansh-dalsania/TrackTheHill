@@ -15,13 +15,7 @@ import com.reptrack.dto.CongressSummaryListResponse;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import com.reptrack.dto.CongressBillDetailDto;
-import com.reptrack.BillCosponsor;
 import com.reptrack.BillCosponsorRepository;
-import com.reptrack.dto.CongressCosponsorDto;
-import com.reptrack.dto.CongressCosponsorListResponse;
-import com.reptrack.dto.CongressSummaryDto;
-import com.reptrack.dto.CongressSummaryListResponse;
 import java.util.Comparator;
 
 import java.time.LocalDate;
