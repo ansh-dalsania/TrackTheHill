@@ -47,6 +47,7 @@ public class MemberController {
     private final TopDonorRepository topDonorRepository;
     private final CommitteeSyncService committeeSyncService;
     private final CommitteeMembershipRepository committeeMembershipRepository;
+    private final CampaignFinanceSummaryRepository campaignFinanceSummaryRepository;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
             MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService,
@@ -54,7 +55,8 @@ public class MemberController {
             BillCosponsorRepository billCosponsorRepository, FecCrosswalkSyncService fecCrosswalkSyncService,
             CampaignFinanceSyncService campaignFinanceSyncService, TopDonorSyncService topDonorSyncService,
             TopDonorRepository topDonorRepository, CommitteeSyncService committeeSyncService,
-            CommitteeMembershipRepository committeeMembershipRepository) {
+            CommitteeMembershipRepository committeeMembershipRepository, 
+            CampaignFinanceSummaryRepository campaignFinanceSummaryRepository) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
@@ -68,6 +70,7 @@ public class MemberController {
         this.topDonorRepository = topDonorRepository;
         this.committeeSyncService = committeeSyncService;
         this.committeeMembershipRepository = committeeMembershipRepository;
+        this.campaignFinanceSummaryRepository = campaignFinanceSummaryRepository;
     }
 
     // Returns all members currently in the database
@@ -309,5 +312,11 @@ public class MemberController {
     public List<Member> searchMembers(@RequestParam String chamber, @RequestParam String query) {
         return memberRepository.findByChamberAndFirstNameContainingIgnoreCaseOrChamberAndLastNameContainingIgnoreCase(
                 chamber, query, chamber, query);
+    }
+
+    @GetMapping("/api/members/{id}/finance-summary")
+    public CampaignFinanceSummary getFinanceSummary(@PathVariable String id,
+            @RequestParam(defaultValue = "2026") int cycle) {
+        return campaignFinanceSummaryRepository.findByMemberBioguideIdAndCycle(id, cycle).orElse(null);
     }
 }
