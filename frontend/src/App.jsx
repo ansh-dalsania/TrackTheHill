@@ -6,6 +6,7 @@ import MemberProfile from './pages/MemberProfile'
 import Bills from './pages/Bills'
 import BillDetail from './pages/BillDetail'
 import VoteDetail from './pages/VoteDetail'
+import StateMembers from './pages/StateMembers'
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/bills" element={<Bills />} />
         <Route path="/bills/:billId" element={<BillDetail />} />
         <Route path="/votes/:voteId" element={<VoteDetail />} />
+        <Route path="/states/:stateCode" element={<StateMembers />} />
       </Routes>
     </BrowserRouter>
   )

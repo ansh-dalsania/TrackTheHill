@@ -8,10 +8,10 @@
 		<version>3.5.0</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.reptrack</groupId>
-	<artifactId>reptrack</artifactId>
+	<groupId>com.trackthehill</groupId>
+	<artifactId>trackthehill</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>reptrack</name>
+	<name>trackthehill</name>
 	<description/>
 	<url/>
 	<licenses>
