@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 import com.trackthehill.dto.AttendanceResponse;
 import com.trackthehill.dto.BillCosponsorResponse;
@@ -292,8 +293,9 @@ public class MemberController {
         stateNames.put("AS", "American Samoa");
         stateNames.put("VI", "Virgin Islands");
         stateNames.put("MP", "Northern Mariana Islands");
-
+        Set<String> excludedFromDropdown = Set.of("DC", "PR", "GU", "AS", "VI", "MP");
         return memberRepository.findDistinctStates().stream()
+                .filter(code -> !excludedFromDropdown.contains(code))
                 .map(code -> {
                     Map<String, String> entry = new LinkedHashMap<>();
                     entry.put("code", code);
