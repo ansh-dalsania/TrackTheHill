@@ -33,7 +33,7 @@ function MemberProfile() {
   // Fetch voting history separately, since it depends on the policy area filter
   useEffect(() => {
     const url = selectedPolicyArea
-      ? `http://localhost:8080/api/members/${bioguideId}/votes-by-issue?policyArea=${selectedPolicyArea}`
+      ? `http://localhost:8080/api/members/${bioguideId}/votes-by-issue?policyArea=${encodeURIComponent(selectedPolicyArea)}`
       : `http://localhost:8080/api/members/${bioguideId}/votes`
 
     fetch(url).then(res => res.json()).then(setVotingHistory)
