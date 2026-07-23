@@ -7,12 +7,13 @@ import Bills from './pages/Bills'
 import BillDetail from './pages/BillDetail'
 import VoteDetail from './pages/VoteDetail'
 import StateMembers from './pages/StateMembers'
+import About from './pages/About'
 
 function App() {
   return (
     <BrowserRouter>
       <nav>
-        <Link to="/">Home</Link> | <Link to="/house">House</Link> | <Link to="/senate">Senate</Link> | <Link to="/bills">Bills</Link>
+        <Link to="/">Home</Link> | <Link to="/house">House</Link> | <Link to="/senate">Senate</Link> | <Link to="/bills">Bills</Link> | <Link to="/about">About</Link>
       </nav>
 
       <Routes>
@@ -24,6 +25,7 @@ function App() {
         <Route path="/bills/:billId" element={<BillDetail />} />
         <Route path="/votes/:voteId" element={<VoteDetail />} />
         <Route path="/states/:stateCode" element={<StateMembers />} />
+        <Route path="/about" element={<About />} />
       </Routes>
     </BrowserRouter>
   )

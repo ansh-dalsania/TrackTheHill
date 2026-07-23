@@ -19,12 +19,14 @@ import java.util.Map;
 
 /**
  * Pulls Senate roll call vote data from Voteview's bulk CSV exports and syncs
- * it into the vote and member_vote tables. 
+ * it into the vote and member_vote tables.
  * 
  * Voteview (academic aggregator run by UCLA) used as the Senate data source
- * because Congress and Senate do not provide Senate voting data in appropriate form.
+ * because Congress and Senate do not provide Senate voting data in appropriate
+ * form.
  *
- * Files are streamed and filtered down to target congress/chamber rather than loaded
+ * Files are streamed and filtered down to target congress/chamber rather than
+ * loaded
  * into memory in full.
  */
 @Service
@@ -33,6 +35,7 @@ public class SenateVoteSyncService {
     private final VoteRepository voteRepository;
     private final MemberVoteRepository memberVoteRepository;
     private final MemberRepository memberRepository;
+    private final BillRepository billRepository;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private static final String MEMBERS_URL = "https://voteview.com/static/data/out/members/HSall_members.csv";
@@ -40,11 +43,12 @@ public class SenateVoteSyncService {
     private static final String VOTES_URL = "https://voteview.com/static/data/out/votes/HSall_votes.csv";
 
     public SenateVoteSyncService(VoteRepository voteRepository,
-                                  MemberVoteRepository memberVoteRepository,
-                                  MemberRepository memberRepository) {
+            MemberVoteRepository memberVoteRepository,
+            MemberRepository memberRepository, BillRepository billRepository) {
         this.voteRepository = voteRepository;
         this.memberVoteRepository = memberVoteRepository;
         this.memberRepository = memberRepository;
+        this.billRepository = billRepository;
     }
 
     public void syncSenateVotes(int congress) throws Exception {
@@ -58,18 +62,25 @@ public class SenateVoteSyncService {
         System.out.println("Senate vote sync complete. Member votes saved: " + memberVoteCount);
     }
 
-    /* Streams HSall_members.csv, returns a map of icpsr (bioguideId for the given congress's Senate) */
+    /*
+     * Streams HSall_members.csv, returns a map of icpsr (bioguideId for the given
+     * congress's Senate)
+     */
     private Map<String, String> buildMemberMap(int congress) throws Exception {
         Map<String, String> map = new HashMap<>();
         HttpRequest request = HttpRequest.newBuilder(URI.create(MEMBERS_URL)).GET().build();
-        HttpResponse<java.io.InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        HttpResponse<java.io.InputStream> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofInputStream());
 
         try (InputStreamReader reader = new InputStreamReader(response.body(), StandardCharsets.UTF_8);
-             CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build().parse(reader)) {
+                CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build()
+                        .parse(reader)) {
 
             for (CSVRecord record : parser) {
-                if (Integer.parseInt(record.get("congress")) != congress) continue;
-                if (!"Senate".equals(record.get("chamber"))) continue;
+                if (Integer.parseInt(record.get("congress")) != congress)
+                    continue;
+                if (!"Senate".equals(record.get("chamber")))
+                    continue;
 
                 String bioguideId = record.get("bioguide_id");
                 if (bioguideId != null && !bioguideId.isBlank()) {
@@ -80,20 +91,25 @@ public class SenateVoteSyncService {
         return map;
     }
 
-    /* Streams HSall_rollcalls.csv, saves Vote rows, returns a map of rollnumber 
-     * Vote for lookup during member-vote processing. 
+    /*
+     * Streams HSall_rollcalls.csv, saves Vote rows, returns a map of rollnumber
+     * Vote for lookup during member-vote processing.
      */
     private Map<Integer, Vote> syncRollCalls(int congress) throws Exception {
         Map<Integer, Vote> rollnumberToVote = new HashMap<>();
         HttpRequest request = HttpRequest.newBuilder(URI.create(ROLLCALLS_URL)).GET().build();
-        HttpResponse<java.io.InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        HttpResponse<java.io.InputStream> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofInputStream());
 
         try (InputStreamReader reader = new InputStreamReader(response.body(), StandardCharsets.UTF_8);
-             CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build().parse(reader)) {
+                CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build()
+                        .parse(reader)) {
 
             for (CSVRecord record : parser) {
-                if (Integer.parseInt(record.get("congress")) != congress) continue;
-                if (!"Senate".equals(record.get("chamber"))) continue;
+                if (Integer.parseInt(record.get("congress")) != congress)
+                    continue;
+                if (!"Senate".equals(record.get("chamber")))
+                    continue;
 
                 int rollnumber = Integer.parseInt(record.get("rollnumber"));
                 int session = Integer.parseInt(record.get("session"));
@@ -107,6 +123,14 @@ public class SenateVoteSyncService {
                 vote.setChamber("Senate");
                 vote.setVoteQuestion(getOrNull(record, "vote_desc"));
                 vote.setResult(getOrNull(record, "vote_result"));
+
+                String billNumber = getOrNull(record, "bill_number");
+                if (billNumber != null && !billNumber.startsWith("PN")) {
+                    Bill linkedBill = parseAndFindBill(billNumber, congress);
+                    if (linkedBill != null) {
+                        vote.setBill(linkedBill);
+                    }
+                }
 
                 String date = getOrNull(record, "date");
                 if (date != null) {
@@ -123,33 +147,60 @@ public class SenateVoteSyncService {
         return rollnumberToVote;
     }
 
+    /**
+     * Parses Voteview's bill_number format (e.g. "S5", "SJRES12") into our
+     * bill.id scheme and looks it up. Presidential Nominations are skipped.
+     */
+    private Bill parseAndFindBill(String billNumber, int congress) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("^([A-Z]+)(\\d+)$")
+                .matcher(billNumber);
+        if (!matcher.matches())
+            return null;
+
+        String billType = matcher.group(1).toLowerCase();
+        String number = matcher.group(2);
+        String billId = congress + "-" + billType + "-" + number;
+
+        return billRepository.findById(billId).orElse(null);
+    }
+
     /** Streams HSall_votes.csv and saves rows matching the target Senate. */
-    private int syncMemberVotes(int congress, Map<String, String> icpsrToBioguide, Map<Integer, Vote> rollnumberToVote) throws Exception {
+    private int syncMemberVotes(int congress, Map<String, String> icpsrToBioguide, Map<Integer, Vote> rollnumberToVote)
+            throws Exception {
         int count = 0;
         HttpRequest request = HttpRequest.newBuilder(URI.create(VOTES_URL)).GET().build();
-        HttpResponse<java.io.InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        HttpResponse<java.io.InputStream> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofInputStream());
 
         try (InputStreamReader reader = new InputStreamReader(response.body(), StandardCharsets.UTF_8);
-             CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build().parse(reader)) {
+                CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build()
+                        .parse(reader)) {
 
             for (CSVRecord record : parser) {
-                if (Integer.parseInt(record.get("congress")) != congress) continue;
-                if (!"Senate".equals(record.get("chamber"))) continue;
+                if (Integer.parseInt(record.get("congress")) != congress)
+                    continue;
+                if (!"Senate".equals(record.get("chamber")))
+                    continue;
 
                 String icpsr = record.get("icpsr");
                 String bioguideId = icpsrToBioguide.get(icpsr);
-                if (bioguideId == null) continue; // member not in our current roster
+                if (bioguideId == null)
+                    continue; // member not in our current roster
 
                 var memberOpt = memberRepository.findById(bioguideId);
-                if (memberOpt.isEmpty()) continue;
+                if (memberOpt.isEmpty())
+                    continue;
 
                 int rollnumber = Integer.parseInt(record.get("rollnumber"));
                 Vote vote = rollnumberToVote.get(rollnumber);
-                if (vote == null) continue;
+                if (vote == null)
+                    continue;
 
                 int castCode = Integer.parseInt(record.get("cast_code"));
                 String position = mapCastCode(castCode);
-                if (position == null) continue; // 0 = not a member at time of vote; skip
+                if (position == null)
+                    continue; // 0 = not a member at time of vote; skip
 
                 MemberVote memberVote = memberVoteRepository
                         .findByVoteIdAndMemberBioguideId(vote.getId(), bioguideId)
@@ -167,7 +218,9 @@ public class SenateVoteSyncService {
         return count;
     }
 
-    /** Maps Voteview's numeric cast_code to text, matching the House data's format. */
+    /**
+     * Maps Voteview's numeric cast_code to text, matching the House data's format.
+     */
     private String mapCastCode(int castCode) {
         return switch (castCode) {
             case 1, 2, 3 -> "Yea";
