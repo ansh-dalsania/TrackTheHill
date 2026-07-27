@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -16,4 +17,10 @@ public interface BillRepository extends JpaRepository<Bill, String> {
     List<String> findDistinctPolicyAreas();
 
     Page<Bill> findByPolicyArea(String policyArea, Pageable pageable);
+
+    @Query("SELECT b FROM Bill b WHERE EXISTS (SELECT v FROM Vote v WHERE v.bill = b)")
+    Page<Bill> findWithVotes(Pageable pageable);
+
+    @Query("SELECT b FROM Bill b WHERE b.policyArea = :policyArea AND EXISTS (SELECT v FROM Vote v WHERE v.bill = b)")
+    Page<Bill> findWithVotesByPolicyArea(@Param("policyArea") String policyArea, Pageable pageable);
 }

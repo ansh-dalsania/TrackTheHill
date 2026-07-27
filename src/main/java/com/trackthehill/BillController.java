@@ -20,12 +20,14 @@ public class BillController {
     private final BillRepository billRepository;
     private final BillSyncService billSyncService;
     private final BillCosponsorRepository billCosponsorRepository;
+    private final VoteRepository voteRepository;
 
     public BillController(BillRepository billRepository, BillSyncService billSyncService,
-            BillCosponsorRepository billCosponsorRepository) {
+            BillCosponsorRepository billCosponsorRepository, VoteRepository voteRepository) {
         this.billRepository = billRepository;
         this.billSyncService = billSyncService;
         this.billCosponsorRepository = billCosponsorRepository;
+        this.voteRepository = voteRepository;
     }
 
     @GetMapping("/api/bills")
@@ -33,17 +35,12 @@ public class BillController {
             @RequestParam(defaultValue = "50") int size,
             @RequestParam(required = false) String policyArea) {
         Page<Bill> bills = (policyArea != null)
-                ? billRepository.findByPolicyArea(policyArea, PageRequest.of(page, size))
-                : billRepository.findAll(PageRequest.of(page, size));
+                ? billRepository.findWithVotesByPolicyArea(policyArea, PageRequest.of(page, size))
+                : billRepository.findWithVotes(PageRequest.of(page, size));
 
         return bills.map(bill -> new BillSummaryResponse(
-                bill.getId(),
-                bill.getTitle(),
-                bill.getBillType(),
-                bill.getBillNumber(),
-                bill.getOriginChamber(),
-                bill.getLatestActionText(),
-                bill.getLatestActionDate(),
+                bill.getId(), bill.getTitle(), bill.getBillType(), bill.getBillNumber(),
+                bill.getOriginChamber(), bill.getLatestActionText(), bill.getLatestActionDate(),
                 bill.getPolicyArea(),
                 bill.getSponsor() != null ? bill.getSponsor().getBioguideId() : null,
                 bill.getSponsor() != null ? bill.getSponsor().getFirstName() + " " + bill.getSponsor().getLastName()
@@ -109,5 +106,10 @@ public class BillController {
                 bill.getSponsor() != null ? bill.getSponsor().getFirstName() + " " + bill.getSponsor().getLastName()
                         : null,
                 cosponsors);
+    }
+
+    @GetMapping("/api/bills/{id}/votes")
+    public List<Vote> getVotesForBill(@PathVariable String id) {
+        return voteRepository.findByBillIdOrderByVoteDateDesc(id);
     }
 }
