@@ -21,6 +21,12 @@ function About() {
         <li>Partisan score reflects how often a member's vote matched the majority position of their own party on a given roll call.</li>
         <li>Bill summaries are official, nonpartisan summaries written by the Congressional Research Service (CRS), not AI-generated.</li>
         <li>Committee membership reflects current assignments only; historical committee data is not tracked.</li>
+        <li>Bill and voting data is filtered to legislation that has shown genuine progress
+            (passed a chamber, reported out of committee, signed into law, etc.) — bills that
+            were introduced and never acted on further are intentionally excluded. This means
+            "bills sponsored" counts reflect impact, not raw volume, and may be lower than a
+            member's total number of introduced bills.
+        </li>
       </ul>
     </div>
   )

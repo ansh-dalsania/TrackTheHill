@@ -1,6 +1,24 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 
+function categorizeVote(vote) {
+  if (vote.chamber === 'House') {
+    const q = vote.voteQuestion || ''
+    if (q.includes('Amendment')) return 'Amendment'
+    if (q.includes('Passage')) return 'Final Passage'
+    return 'Procedural/Other'
+  }
+
+  // Senate: use the structured "result" field instead of vote_question
+  const r = vote.result || ''
+  if (r.includes('Amendment')) return 'Amendment'
+  if (r.includes('Bill Passed') || r.includes('Bill Defeated') ||
+      r.includes('Joint Resolution') || r.includes('Concurrent Resolution')) {
+    return 'Final Passage'
+  }
+  return 'Procedural/Other'
+}
+
 function MemberProfile() {
   const { bioguideId } = useParams()
   const [member, setMember] = useState(null)
@@ -14,6 +32,7 @@ function MemberProfile() {
   const [votingHistory, setVotingHistory] = useState([])
   const [policyAreas, setPolicyAreas] = useState([])
   const [selectedPolicyArea, setSelectedPolicyArea] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
 
   // Fetch everything that doesn't depend on the policy area filter
   useEffect(() => {
@@ -68,6 +87,7 @@ function MemberProfile() {
       )}
 
       <h2>Bills Sponsored ({billsSponsored.length})</h2>
+      <p><em>Reflects bills that have shown legislative progress; does not include bills introduced but never acted upon. <Link to="/about">Learn more</Link>.</em></p>
       <ul>
         {billsSponsored.slice(0, 10).map(b => (
           <li key={b.id}><Link to={`/bills/${b.id}`}>{b.title}</Link></li>
@@ -75,6 +95,7 @@ function MemberProfile() {
       </ul>
 
       <h2>Bills Cosponsored ({billsCosponsored.length})</h2>
+      <p><em>Also reflects only bills that have shown legislative progress. <Link to="/about">Learn more</Link>.</em></p>
       <ul>
         {billsCosponsored.slice(0, 10).map(bc => (
           <li key={bc.bill.id}><Link to={`/bills/${bc.bill.id}`}>{bc.bill.title}</Link></li>
@@ -108,13 +129,26 @@ function MemberProfile() {
           ))}
         </select>
       </label>
+      {' '}
+      <label>
+        Filter by vote type:{' '}
+        <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+          <option value="">All Types</option>
+          <option value="Final Passage">Final Passage</option>
+          <option value="Amendment">Amendment</option>
+          <option value="Procedural/Other">Procedural/Other</option>
+        </select>
+      </label>
       <ul>
-        {votingHistory.slice(0, 15).map(v => (
-          <li key={v.voteId}>
-            <Link to={`/votes/${v.voteId}`}>{v.voteDate?.split('T')[0]} — {v.voteQuestion}: {v.position}</Link>
-            {v.billTitle && ` (${v.billTitle})`}
-          </li>
-        ))}
+        {votingHistory
+          .filter(v => !selectedCategory || categorizeVote(v) === selectedCategory)
+          .slice(0, 15)
+          .map(v => (
+            <li key={v.voteId}>
+              <Link to={`/votes/${v.voteId}`}>{v.voteDate?.split('T')[0]} — {v.voteQuestion}: {v.position}</Link>
+              {v.billTitle && ` (${v.billTitle})`}
+            </li>
+          ))}
       </ul>
     </div>
   )
