@@ -37,6 +37,7 @@ public class SenateVoteSyncService {
     private final MemberRepository memberRepository;
     private final BillRepository billRepository;
     private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final BillSyncService billSyncService;
 
     private static final String MEMBERS_URL = "https://voteview.com/static/data/out/members/HSall_members.csv";
     private static final String ROLLCALLS_URL = "https://voteview.com/static/data/out/rollcalls/HSall_rollcalls.csv";
@@ -44,11 +45,13 @@ public class SenateVoteSyncService {
 
     public SenateVoteSyncService(VoteRepository voteRepository,
             MemberVoteRepository memberVoteRepository,
-            MemberRepository memberRepository, BillRepository billRepository) {
+            MemberRepository memberRepository, BillRepository billRepository,
+            BillSyncService billSyncService) {
         this.voteRepository = voteRepository;
         this.memberVoteRepository = memberVoteRepository;
         this.memberRepository = memberRepository;
         this.billRepository = billRepository;
+        this.billSyncService = billSyncService;
     }
 
     public void syncSenateVotes(int congress) throws Exception {
@@ -159,10 +162,9 @@ public class SenateVoteSyncService {
             return null;
 
         String billType = matcher.group(1).toLowerCase();
-        String number = matcher.group(2);
-        String billId = congress + "-" + billType + "-" + number;
+        int number = Integer.parseInt(matcher.group(2));
 
-        return billRepository.findById(billId).orElse(null);
+        return billSyncService.fetchAndSaveBillIfMissing(congress, billType, number);
     }
 
     /** Streams HSall_votes.csv and saves rows matching the target Senate. */

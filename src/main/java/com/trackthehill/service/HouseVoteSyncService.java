@@ -27,19 +27,19 @@ public class HouseVoteSyncService {
     private final MemberVoteRepository memberVoteRepository;
     private final MemberRepository memberRepository;
     private final BillRepository billRepository;
+    private BillSyncService billSyncService;
 
-    public HouseVoteSyncService(WebClient congressApiClient,
-            WebClientConfig webClientConfig,
-            VoteRepository voteRepository,
-            MemberVoteRepository memberVoteRepository,
-            MemberRepository memberRepository,
-            BillRepository billRepository) {
+    public HouseVoteSyncService(WebClient congressApiClient, WebClientConfig webClientConfig,
+            VoteRepository voteRepository, MemberVoteRepository memberVoteRepository,
+            MemberRepository memberRepository, BillRepository billRepository, 
+            BillSyncService billSyncService) {
         this.congressApiClient = congressApiClient;
         this.webClientConfig = webClientConfig;
         this.voteRepository = voteRepository;
         this.memberVoteRepository = memberVoteRepository;
         this.memberRepository = memberRepository;
         this.billRepository = billRepository;
+        this.billSyncService = billSyncService;
     }
 
     public void syncVotes(int congressNumber) {
@@ -94,14 +94,18 @@ public class HouseVoteSyncService {
         vote.setSession(dto.sessionNumber);
         vote.setRollCallNumber(dto.rollCallNumber);
         vote.setResult(dto.result);
+        vote.setChamber("House");
         if (dto.startDate != null) {
             vote.setVoteDate(OffsetDateTime.parse(dto.startDate).toLocalDateTime());
         }
 
         // Link to a bill if applicable
         if (dto.legislationType != null && dto.legislationNumber != null) {
-            String billId = dto.congress + "-" + dto.legislationType.toLowerCase() + "-" + dto.legislationNumber;
-            billRepository.findById(billId).ifPresent(vote::setBill);
+            Bill linkedBill = billSyncService.fetchAndSaveBillIfMissing(
+                    dto.congress, dto.legislationType, Integer.parseInt(dto.legislationNumber));
+            if (linkedBill != null) {
+                vote.setBill(linkedBill);
+            }
         }
 
         vote.setCreatedAt(vote.getCreatedAt() != null ? vote.getCreatedAt() : LocalDateTime.now());

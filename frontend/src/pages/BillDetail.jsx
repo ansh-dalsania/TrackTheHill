@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { explainAction } from '../utils/legislativeGlossary'
+import { buildCongressGovUrl } from '../utils/congressUrl'
+import { categorizeVote } from '../utils/voteCategory'
 
 function BillDetail() {
   const { billId } = useParams()
@@ -34,7 +36,7 @@ function BillDetail() {
       {bill.sponsorBioguideId && (
         <p>Sponsor: <Link to={`/members/${bill.sponsorBioguideId}`}>{bill.sponsorName}</Link></p>
       )}
-      <p><a href={bill.congressGovUrl} target="_blank" rel="noreferrer">View on Congress.gov</a></p>
+      <p><a href={buildCongressGovUrl(bill.id)} target="_blank" rel="noreferrer">View on Congress.gov</a></p>
 
       {bill.summary && (
         <>
@@ -54,13 +56,17 @@ function BillDetail() {
       </ul>
       <h2>Votes on This Bill ({votes.length})</h2>
       <ul>
-        {votes.map(v => (
-          <li key={v.id}>
-            <Link to={`/votes/${v.id}`}>
-            {v.chamber} — {v.voteDate?.split('T')[0]} — {v.voteQuestion} ({v.result})
-          </Link>
-          </li>
-        ))}
+        {votes.map(v => {
+          const isFinalPassage = categorizeVote(v) === 'Final Passage'
+          return (
+            <li key={v.id} style={isFinalPassage ? { fontWeight: 'bold' } : {}}>
+              <Link to={`/votes/${v.id}`}>
+                {v.chamber} — {v.voteDate?.split('T')[0]} — {v.voteQuestion} ({v.result})
+              </Link>
+              {isFinalPassage && ' ⭐ Final Passage Vote'}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )

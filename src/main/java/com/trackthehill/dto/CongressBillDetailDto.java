@@ -12,6 +12,7 @@ public class CongressBillDetailDto {
         public String introducedDate;
         public PolicyArea policyArea;
         public List<Sponsor> sponsors;
+        public String title;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

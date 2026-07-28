@@ -286,4 +286,52 @@ public class BillSyncService {
 
         System.out.println("Summary sync complete. Bills updated: " + updatedCount);
     }
+
+    /**
+     * Fetches a single bill from Congress.gov and adds it to the database if not
+     * already present. Used as a fallback when a vote references a bill that
+     * wasn't originally included via the "progressed" filter — a bill that
+     * received an actual recorded vote has, by definition, shown real activity.
+     */
+    public Bill fetchAndSaveBillIfMissing(int congress, String billType, int billNumber) {
+        String billId = congress + "-" + billType.toLowerCase() + "-" + billNumber;
+        var existing = billRepository.findById(billId);
+        if (existing.isPresent())
+            return existing.get();
+
+        CongressBillDetailDto response = congressApiClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/bill/{congress}/{type}/{number}")
+                        .queryParam("api_key", webClientConfig.getApiKey())
+                        .build(congress, billType, billNumber))
+                .retrieve()
+                .bodyToMono(CongressBillDetailDto.class)
+                .retry(3)
+                .block();
+
+        if (response == null || response.bill == null)
+            return null;
+
+        Bill bill = new Bill();
+        bill.setId(billId);
+        bill.setCongress(congress);
+        bill.setBillType(billType.toLowerCase());
+        bill.setBillNumber(billNumber);
+        bill.setTitle(response.bill.title != null ? response.bill.title : "(Title unavailable)");
+        bill.setOriginChamber(billType.toLowerCase().startsWith("h") ? "House" : "Senate");
+        if (response.bill.introducedDate != null) {
+            bill.setIntroducedDate(LocalDate.parse(response.bill.introducedDate));
+        }
+        if (response.bill.policyArea != null) {
+            bill.setPolicyArea(response.bill.policyArea.name);
+        }
+        if (response.bill.sponsors != null && !response.bill.sponsors.isEmpty()) {
+            memberRepository.findById(response.bill.sponsors.get(0).bioguideId).ifPresent(bill::setSponsor);
+        }
+        bill.setCreatedAt(LocalDateTime.now());
+        bill.setUpdatedAt(LocalDateTime.now());
+        billRepository.save(bill);
+
+        return bill;
+    }
 }
