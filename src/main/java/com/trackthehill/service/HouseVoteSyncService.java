@@ -31,7 +31,7 @@ public class HouseVoteSyncService {
 
     public HouseVoteSyncService(WebClient congressApiClient, WebClientConfig webClientConfig,
             VoteRepository voteRepository, MemberVoteRepository memberVoteRepository,
-            MemberRepository memberRepository, BillRepository billRepository, 
+            MemberRepository memberRepository, BillRepository billRepository,
             BillSyncService billSyncService) {
         this.congressApiClient = congressApiClient;
         this.webClientConfig = webClientConfig;
@@ -86,8 +86,7 @@ public class HouseVoteSyncService {
     }
 
     private void syncSingleVote(HouseVoteDto dto) {
-        String voteId = dto.congress + "-" + dto.sessionNumber + "-" + dto.rollCallNumber;
-
+        String voteId = "H-" + dto.congress + "-" + dto.sessionNumber + "-" + dto.rollCallNumber;
         Vote vote = voteRepository.findById(voteId).orElse(new Vote());
         vote.setId(voteId);
         vote.setCongress(dto.congress);
