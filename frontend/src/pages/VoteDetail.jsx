@@ -24,7 +24,9 @@ function VoteDetail() {
       <p>{vote.chamber} — Congress {vote.congress} — {vote.voteDate?.split('T')[0]}</p>
       <p>Result: {vote.result}</p>
       {explainAction(vote.voteQuestion) && <p><em>{explainAction(vote.voteQuestion)}</em></p>}
-      
+      {vote.billId && (
+        <p>Bill: <Link to={`/bills/${vote.billId}`}>{vote.billTitle}</Link></p>
+      )}
       <h2>Yea ({yeas.length})</h2>
       <ul>
         {yeas.map(p => (
