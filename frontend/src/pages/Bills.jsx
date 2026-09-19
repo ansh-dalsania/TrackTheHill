@@ -5,6 +5,7 @@ function Bills() {
   const [bills, setBills] = useState([])
   const [policyAreas, setPolicyAreas] = useState([])
   const [selectedPolicyArea, setSelectedPolicyArea] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
 
@@ -17,6 +18,7 @@ function Bills() {
   useEffect(() => {
     const params = new URLSearchParams({ page, size: 20 })
     if (selectedPolicyArea) params.set('policyArea', selectedPolicyArea)
+    if (searchQuery.trim()) params.set('query', searchQuery.trim())
 
     fetch(`http://localhost:8080/api/bills?${params}`)
       .then(res => res.json())
@@ -24,15 +26,22 @@ function Bills() {
         setBills(data.content)
         setTotalPages(data.totalPages)
       })
-  }, [page, selectedPolicyArea])
+  }, [page, selectedPolicyArea, searchQuery])
 
   return (
     <div>
       <h1>Bills</h1>
       <p><em>Only shows bills that have shown legislative progress. <Link to="/about">Learn more</Link>.</em></p>
 
+      <input
+        type="text"
+        placeholder="Search bill titles..."
+        value={searchQuery}
+        onChange={e => { setSearchQuery(e.target.value); setPage(0) }}
+      />
+
       <label>
-        Filter by issue:{' '}
+        {' '}Filter by issue:{' '}
         <select value={selectedPolicyArea} onChange={e => { setSelectedPolicyArea(e.target.value); setPage(0) }}>
           <option value="">All Issues</option>
           {policyAreas.map(area => (

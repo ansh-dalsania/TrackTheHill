@@ -23,4 +23,11 @@ public interface BillRepository extends JpaRepository<Bill, String> {
 
     @Query("SELECT b FROM Bill b WHERE b.policyArea = :policyArea AND EXISTS (SELECT v FROM Vote v WHERE v.bill = b)")
     Page<Bill> findWithVotesByPolicyArea(@Param("policyArea") String policyArea, Pageable pageable);
+
+    @Query("SELECT b FROM Bill b WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%')) AND EXISTS (SELECT v FROM Vote v WHERE v.bill = b)")
+    Page<Bill> searchWithVotes(@Param("title") String title, Pageable pageable);
+
+    @Query("SELECT b FROM Bill b WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%')) AND b.policyArea = :policyArea AND EXISTS (SELECT v FROM Vote v WHERE v.bill = b)")
+    Page<Bill> searchWithVotesByPolicyArea(@Param("title") String title, @Param("policyArea") String policyArea,
+            Pageable pageable);
 }

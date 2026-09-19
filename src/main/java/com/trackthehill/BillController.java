@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.domain.Page;
 
@@ -33,10 +34,20 @@ public class BillController {
     @GetMapping("/api/bills")
     public Page<BillSummaryResponse> getAllBills(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
-            @RequestParam(required = false) String policyArea) {
-        Page<Bill> bills = (policyArea != null)
-                ? billRepository.findWithVotesByPolicyArea(policyArea, PageRequest.of(page, size))
-                : billRepository.findWithVotes(PageRequest.of(page, size));
+            @RequestParam(required = false) String policyArea,
+            @RequestParam(required = false) String query) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Bill> bills;
+
+        if (query != null && !query.isBlank()) {
+            bills = (policyArea != null)
+                    ? billRepository.searchWithVotesByPolicyArea(query, policyArea, pageable)
+                    : billRepository.searchWithVotes(query, pageable);
+        } else {
+            bills = (policyArea != null)
+                    ? billRepository.findWithVotesByPolicyArea(policyArea, pageable)
+                    : billRepository.findWithVotes(pageable);
+        }
 
         return bills.map(bill -> new BillSummaryResponse(
                 bill.getId(), bill.getTitle(), bill.getBillType(), bill.getBillNumber(),
