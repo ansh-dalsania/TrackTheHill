@@ -18,15 +18,12 @@ import com.trackthehill.dto.BillCosponsorResponse;
 import com.trackthehill.dto.BillSummaryResponse;
 import com.trackthehill.dto.MemberVoteResponse;
 import com.trackthehill.dto.PartisanScoreResponse;
-import com.trackthehill.service.CampaignFinanceSyncService;
 import com.trackthehill.service.CommitteeSyncService;
-import com.trackthehill.service.FecCrosswalkSyncService;
 import com.trackthehill.service.HouseVoteSyncService;
 import java.util.stream.Collectors;
 import com.trackthehill.service.VoteAnalyticsService;
 import java.util.Map;
 import com.trackthehill.service.NominateScoreSyncService;
-import com.trackthehill.service.TopDonorSyncService;
 import org.springframework.data.domain.Page;
 
 /**
@@ -42,22 +39,15 @@ public class MemberController {
     private final NominateScoreSyncService nominateScoreSyncService;
     private final BillRepository billRepository;
     private final BillCosponsorRepository billCosponsorRepository;
-    private final FecCrosswalkSyncService fecCrosswalkSyncService;
-    private final CampaignFinanceSyncService campaignFinanceSyncService;
-    private final TopDonorSyncService topDonorSyncService;
-    private final TopDonorRepository topDonorRepository;
     private final CommitteeSyncService committeeSyncService;
     private final CommitteeMembershipRepository committeeMembershipRepository;
-    private final CampaignFinanceSummaryRepository campaignFinanceSummaryRepository;
 
     public MemberController(MemberRepository memberRepository, MemberSyncService memberSyncService,
             MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService,
             NominateScoreSyncService nominateScoreSyncService, BillRepository billRepository,
-            BillCosponsorRepository billCosponsorRepository, FecCrosswalkSyncService fecCrosswalkSyncService,
-            CampaignFinanceSyncService campaignFinanceSyncService, TopDonorSyncService topDonorSyncService,
-            TopDonorRepository topDonorRepository, CommitteeSyncService committeeSyncService,
-            CommitteeMembershipRepository committeeMembershipRepository, 
-            CampaignFinanceSummaryRepository campaignFinanceSummaryRepository) {
+            BillCosponsorRepository billCosponsorRepository, CommitteeSyncService committeeSyncService,
+            CommitteeMembershipRepository committeeMembershipRepository 
+            ) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
@@ -65,13 +55,8 @@ public class MemberController {
         this.nominateScoreSyncService = nominateScoreSyncService;
         this.billRepository = billRepository;
         this.billCosponsorRepository = billCosponsorRepository;
-        this.fecCrosswalkSyncService = fecCrosswalkSyncService;
-        this.campaignFinanceSyncService = campaignFinanceSyncService;
-        this.topDonorSyncService = topDonorSyncService;
-        this.topDonorRepository = topDonorRepository;
         this.committeeSyncService = committeeSyncService;
         this.committeeMembershipRepository = committeeMembershipRepository;
-        this.campaignFinanceSummaryRepository = campaignFinanceSummaryRepository;
     }
 
     // Returns all members currently in the database
@@ -180,29 +165,6 @@ public class MemberController {
                         bc.getSponsorshipDate(),
                         bc.getIsOriginalCosponsor()))
                 .collect(Collectors.toList());
-    }
-
-    @GetMapping("/api/sync/members/fec-crosswalk")
-    public String triggerFecCrosswalkSync() throws Exception {
-        fecCrosswalkSyncService.syncCrosswalk();
-        return "FEC crosswalk sync triggered";
-    }
-
-    @GetMapping("/api/sync/finance/{cycle}")
-    public String triggerFinanceSync(@PathVariable int cycle) {
-        campaignFinanceSyncService.syncFinanceSummaries(cycle);
-        return "Campaign finance sync triggered for cycle " + cycle;
-    }
-
-    @GetMapping("/api/sync/top-donors/{cycle}")
-    public String triggerTopDonorSync(@PathVariable int cycle) {
-        topDonorSyncService.syncTopDonors(cycle);
-        return "Top donor sync triggered for cycle " + cycle;
-    }
-
-    @GetMapping("/api/members/{id}/top-donors")
-    public List<TopDonor> getTopDonors(@PathVariable String id, @RequestParam(defaultValue = "2026") int cycle) {
-        return topDonorRepository.findByMemberBioguideIdAndCycleOrderByContributionAmountDesc(id, cycle);
     }
 
     @GetMapping("/api/members/{id}/votes-by-issue")
@@ -316,9 +278,4 @@ public class MemberController {
                 chamber, query, chamber, query);
     }
 
-    @GetMapping("/api/members/{id}/finance-summary")
-    public CampaignFinanceSummary getFinanceSummary(@PathVariable String id,
-            @RequestParam(defaultValue = "2026") int cycle) {
-        return campaignFinanceSummaryRepository.findByMemberBioguideIdAndCycle(id, cycle).orElse(null);
-    }
 }

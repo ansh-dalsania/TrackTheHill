@@ -11,7 +11,6 @@ function About() {
       <ul>
         <li><strong>Congress.gov API</strong> — member profiles, bills, cosponsors, official bill summaries, and House roll call votes.</li>
         <li><strong>Voteview (UCLA)</strong> — Senate roll call votes and DW-NOMINATE ideological scores.</li>
-        <li><strong>Federal Election Commission (FEC)</strong> — campaign finance totals and itemized top donor data.</li>
         <li><strong>unitedstates/congress-legislators</strong> — committee assignments and leadership roles.</li>
       </ul>
 
@@ -26,6 +25,13 @@ function About() {
             were introduced and never acted on further are intentionally excluded. This means
             "bills sponsored" counts reflect impact, not raw volume, and may be lower than a
             member's total number of introduced bills.
+        </li>
+        <li>
+            PAC contribution lists attempt to exclude a member's own leadership PAC or
+            joint fundraising committee (e.g., "Team Smith," "Friends of Smith") based
+            on common naming conventions, since these represent a member's own
+            fundraising vehicle rather than outside special-interest support. This
+            filtering relies on name patterns and is not guaranteed to catch every case.
         </li>
       </ul>
     </div>

@@ -18,29 +18,20 @@ public class ScheduledSyncService {
     private final BillSyncService billSyncService;
     private final HouseVoteSyncService houseVoteSyncService;
     private final SenateVoteSyncService senateVoteSyncService;
-    private final CampaignFinanceSyncService campaignFinanceSyncService;
-    private final TopDonorSyncService topDonorSyncService;
     private final CommitteeSyncService committeeSyncService;
-    private final FecCrosswalkSyncService fecCrosswalkSyncService;
     private final NominateScoreSyncService nominateScoreSyncService;
 
     public ScheduledSyncService(MemberSyncService memberSyncService,
                                  BillSyncService billSyncService,
                                  HouseVoteSyncService houseVoteSyncService,
                                  SenateVoteSyncService senateVoteSyncService,
-                                 CampaignFinanceSyncService campaignFinanceSyncService,
-                                 TopDonorSyncService topDonorSyncService,
                                  CommitteeSyncService committeeSyncService,
-                                 FecCrosswalkSyncService fecCrosswalkSyncService,
                                  NominateScoreSyncService nominateScoreSyncService) {
         this.memberSyncService = memberSyncService;
         this.billSyncService = billSyncService;
         this.houseVoteSyncService = houseVoteSyncService;
         this.senateVoteSyncService = senateVoteSyncService;
-        this.campaignFinanceSyncService = campaignFinanceSyncService;
-        this.topDonorSyncService = topDonorSyncService;
         this.committeeSyncService = committeeSyncService;
-        this.fecCrosswalkSyncService = fecCrosswalkSyncService;
         this.nominateScoreSyncService = nominateScoreSyncService;
     }
 
@@ -79,15 +70,6 @@ public class ScheduledSyncService {
         log("Finished weekly Senate vote sync");
     }
 
-    // Weekly, Sunday 4:00 AM
-    @Scheduled(cron = "0 0 4 * * SUN")
-    public void weeklyFinanceSync() {
-        log("Starting weekly campaign finance sync");
-        campaignFinanceSyncService.syncFinanceSummaries(2026);
-        topDonorSyncService.syncTopDonors(2026);
-        log("Finished weekly campaign finance sync");
-    }
-
     // Weekly, Sunday 5:00 AM
     @Scheduled(cron = "0 0 5 * * SUN")
     public void weeklyCommitteeAndNominateSync() throws Exception {
@@ -95,14 +77,6 @@ public class ScheduledSyncService {
         committeeSyncService.syncCommittees();
         nominateScoreSyncService.syncNominateScores(CURRENT_CONGRESS);
         log("Finished weekly committee and nominate score sync");
-    }
-
-    // Monthly, 1st of the month, 5:30 AM
-    @Scheduled(cron = "0 30 5 1 * *")
-    public void monthlyFecCrosswalkSync() throws Exception {
-        log("Starting monthly FEC crosswalk sync");
-        fecCrosswalkSyncService.syncCrosswalk();
-        log("Finished monthly FEC crosswalk sync");
     }
 
     private void log(String message) {

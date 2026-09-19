@@ -10,8 +10,6 @@ function MemberProfile() {
   const [partisanScore, setPartisanScore] = useState(null)
   const [billsSponsored, setBillsSponsored] = useState([])
   const [billsCosponsored, setBillsCosponsored] = useState([])
-  const [financeSummary, setFinanceSummary] = useState(null)
-  const [topDonors, setTopDonors] = useState([])
   const [votingHistory, setVotingHistory] = useState([])
   const [policyAreas, setPolicyAreas] = useState([])
   const [selectedPolicyArea, setSelectedPolicyArea] = useState('')
@@ -27,8 +25,6 @@ function MemberProfile() {
     fetch(`${base}/partisan-score`).then(res => res.json()).then(setPartisanScore)
     fetch(`${base}/bills-sponsored`).then(res => res.json()).then(setBillsSponsored)
     fetch(`${base}/bills-cosponsored`).then(res => res.json()).then(setBillsCosponsored)
-    fetch(`${base}/finance-summary`).then(res => res.json()).then(setFinanceSummary)
-    fetch(`${base}/top-donors`).then(res => res.json()).then(setTopDonors)
     fetch('http://localhost:8080/api/policy-areas').then(res => res.json()).then(setPolicyAreas)
   }, [bioguideId])
 
@@ -82,23 +78,6 @@ function MemberProfile() {
       <ul>
         {billsCosponsored.slice(0, 10).map(bc => (
           <li key={bc.bill.id}><Link to={`/bills/${bc.bill.id}`}>{bc.bill.title}</Link></li>
-        ))}
-      </ul>
-
-      <h2>Campaign Finance</h2>
-      {financeSummary && (
-        <ul>
-          <li>Individual contributions: ${financeSummary.individualContributions?.toLocaleString()}</li>
-          <li>PAC contributions: ${financeSummary.pacContributions?.toLocaleString()}</li>
-          <li>Party contributions: ${financeSummary.partyContributions?.toLocaleString()}</li>
-          <li>Total receipts: ${financeSummary.totalReceipts?.toLocaleString()}</li>
-        </ul>
-      )}
-
-      <h2>Top Donors</h2>
-      <ul>
-        {topDonors.slice(0, 10).map(d => (
-          <li key={d.id}>{d.contributorName} — ${d.contributionAmount?.toLocaleString()} ({d.contributorEmployer})</li>
         ))}
       </ul>
 
