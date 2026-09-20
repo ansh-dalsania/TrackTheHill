@@ -21,6 +21,6 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 
     List<Member> findByStateOrderByChamberAscDistrictAsc(String state);
 
-    List<Member> findByChamberAndFirstNameContainingIgnoreCaseOrChamberAndLastNameContainingIgnoreCase(
+    List<Member> findByChamberAndFirstNameContainingIgnoreCaseOrChamberAndLastNameContainingIgnoreCaseOrderByLastNameAsc(
             String chamber1, String firstName, String chamber2, String lastName);
 }

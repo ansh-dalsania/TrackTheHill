@@ -25,6 +25,7 @@ import com.trackthehill.service.VoteAnalyticsService;
 import java.util.Map;
 import com.trackthehill.service.NominateScoreSyncService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 
 /**
  * Exposes Member data over HTTP.
@@ -46,8 +47,7 @@ public class MemberController {
             MemberVoteRepository memberVoteRepository, VoteAnalyticsService voteAnalyticsService,
             NominateScoreSyncService nominateScoreSyncService, BillRepository billRepository,
             BillCosponsorRepository billCosponsorRepository, CommitteeSyncService committeeSyncService,
-            CommitteeMembershipRepository committeeMembershipRepository 
-            ) {
+            CommitteeMembershipRepository committeeMembershipRepository) {
         this.memberRepository = memberRepository;
         this.memberSyncService = memberSyncService;
         this.memberVoteRepository = memberVoteRepository;
@@ -63,7 +63,7 @@ public class MemberController {
     @GetMapping("/api/members")
     public Page<Member> getAllMembers(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        return memberRepository.findAll(PageRequest.of(page, size));
+        return memberRepository.findAll(PageRequest.of(page, size, Sort.by("lastName")));
     }
 
     // Returns a single member by their bioguide ID
@@ -274,8 +274,9 @@ public class MemberController {
 
     @GetMapping("/api/members/search")
     public List<Member> searchMembers(@RequestParam String chamber, @RequestParam String query) {
-        return memberRepository.findByChamberAndFirstNameContainingIgnoreCaseOrChamberAndLastNameContainingIgnoreCase(
-                chamber, query, chamber, query);
+        return memberRepository
+                .findByChamberAndFirstNameContainingIgnoreCaseOrChamberAndLastNameContainingIgnoreCaseOrderByLastNameAsc(
+                        chamber, query, chamber, query);
     }
 
 }
