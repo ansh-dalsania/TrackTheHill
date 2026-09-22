@@ -296,8 +296,9 @@ public class BillSyncService {
     public Bill fetchAndSaveBillIfMissing(int congress, String billType, int billNumber) {
         String billId = congress + "-" + billType.toLowerCase() + "-" + billNumber;
         var existing = billRepository.findById(billId);
-        if (existing.isPresent())
+        if (existing.isPresent() && existing.get().getLatestActionText() != null) {
             return existing.get();
+        }
 
         CongressBillDetailDto response = congressApiClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -309,15 +310,16 @@ public class BillSyncService {
                 .retry(3)
                 .block();
 
-        if (response == null || response.bill == null)
-            return null;
+        if (response == null || response.bill == null) {
+            return existing.orElse(null);
+        }
 
-        Bill bill = new Bill();
+        Bill bill = existing.orElse(new Bill());
         bill.setId(billId);
         bill.setCongress(congress);
         bill.setBillType(billType.toLowerCase());
         bill.setBillNumber(billNumber);
-        bill.setTitle(response.bill.title != null ? response.bill.title : "(Title unavailable)");
+        bill.setTitle(response.bill.title != null ? response.bill.title : bill.getTitle());
         bill.setOriginChamber(billType.toLowerCase().startsWith("h") ? "House" : "Senate");
         if (response.bill.introducedDate != null) {
             bill.setIntroducedDate(LocalDate.parse(response.bill.introducedDate));
@@ -328,7 +330,13 @@ public class BillSyncService {
         if (response.bill.sponsors != null && !response.bill.sponsors.isEmpty()) {
             memberRepository.findById(response.bill.sponsors.get(0).bioguideId).ifPresent(bill::setSponsor);
         }
-        bill.setCreatedAt(LocalDateTime.now());
+        if (response.bill.latestAction != null) {
+            bill.setLatestActionText(response.bill.latestAction.text);
+            if (response.bill.latestAction.actionDate != null) {
+                bill.setLatestActionDate(LocalDate.parse(response.bill.latestAction.actionDate));
+            }
+        }
+        bill.setCreatedAt(bill.getCreatedAt() != null ? bill.getCreatedAt() : LocalDateTime.now());
         bill.setUpdatedAt(LocalDateTime.now());
         billRepository.save(bill);
 

@@ -13,6 +13,7 @@ public class CongressBillDetailDto {
         public PolicyArea policyArea;
         public List<Sponsor> sponsors;
         public String title;
+        public LatestAction latestAction;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -23,5 +24,11 @@ public class CongressBillDetailDto {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Sponsor {
         public String bioguideId;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class LatestAction {
+        public String actionDate;
+        public String text;
     }
 }
