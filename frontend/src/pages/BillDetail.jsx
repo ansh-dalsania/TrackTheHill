@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { buildCongressGovUrl } from '../utils/congressUrl'
 import { categorizeVote } from '../utils/voteCategory'
 import { explainAction } from '../utils/legislativeGlossary'
+import { getBillStatus } from '../utils/billStatus'
 
 function BillDetail() {
   const { billId } = useParams()
@@ -23,6 +24,15 @@ function BillDetail() {
       <p className="text-sm text-slate-500 mb-4">
         {bill.billType.toUpperCase()} {bill.billNumber} · {bill.originChamber} · {bill.policyArea}
       </p>
+
+      {(() => {
+        const status = getBillStatus(bill.latestActionText)
+        return status && (
+          <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mb-4 ${status.color}`}>
+            {status.label}
+          </span>
+        )
+      })()}
 
       <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6 text-sm space-y-2">
         <p><span className="font-semibold text-slate-700">Introduced:</span> {bill.introducedDate}</p>
@@ -60,7 +70,11 @@ function BillDetail() {
               <li key={v.id} className="py-2">
                 <Link to={`/votes/${v.id}`} className={`text-sm hover:text-gold-600 ${isFinalPassage ? 'font-bold text-navy-700' : 'text-slate-700'}`}>
                   {v.chamber} — {v.voteDate?.split('T')[0]} — {v.voteQuestion} ({v.result})
-                  {isFinalPassage && <span className="ml-2 text-gold-600">⭐ Final Passage</span>}
+                  {isFinalPassage && (
+                    <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-gold-100 text-gold-700 align-middle">
+                      Final Passage
+                    </span>
+                  )}
                 </Link>
               </li>
             )

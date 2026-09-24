@@ -2,7 +2,7 @@ export function categorizeVote(vote) {
   if (vote.chamber === 'House') {
     const q = vote.voteQuestion || ''
     if (q.includes('Amendment')) return 'Amendment'
-    if (q.includes('Passage')) return 'Final Passage'
+    if (q.includes('Passage') || q.includes('Suspend the Rules and Pass')) return 'Final Passage'
     return 'Procedural/Other'
   }
 
