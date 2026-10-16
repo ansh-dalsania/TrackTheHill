@@ -4,10 +4,9 @@ A nonpartisan website for exploring how members of the U.S. Congress vote, built
 
 It covers all 536 members of the 119th Congress: voting records, bills, cosponsorships, and committee assignments in one searchable place.
 
-<!-- Add screenshots to docs/screenshots/ and uncomment:
-![Home](docs/screenshots/home.png)
-![Member profile](docs/screenshots/member-profile.png)
--->
+Add screenshots to docs/screenshots/ and uncomment:
+[Home](docs/screenshots/home.png)
+[Member profile](docs/screenshots/member-profile.png)
 
 ## Features
 
