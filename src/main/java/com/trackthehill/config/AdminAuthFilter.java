@@ -10,7 +10,7 @@ import java.io.IOException;
 
 /**
  * Protects all /api/sync/** endpoints with a simple shared-secret header check.
- * These endpoints trigger external API calls (FEC, Congress.gov, Voteview) 
+ * These endpoints trigger external API calls (Congress.gov, Voteview) 
  * and write to the database (cannot be publicly accessible).
  */
 @Component

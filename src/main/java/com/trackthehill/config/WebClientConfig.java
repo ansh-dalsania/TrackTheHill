@@ -26,18 +26,4 @@ public class WebClientConfig {
     public String getApiKey() {
         return apiKey;
     }
-
-    @Value("${fec.api.key}")
-    private String fecApiKey;
-
-    @Bean
-    public WebClient fecApiClient() {
-        return WebClient.builder()
-                .baseUrl("https://api.open.fec.gov/v1")
-                .build();
-    }
-
-    public String getFecApiKey() {
-        return fecApiKey;
-    }
 }
